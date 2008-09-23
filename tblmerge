@@ -212,10 +212,24 @@ sub buildRecords($$$$$)
   return @uindex;
 }
 
+sub min($$)
+{
+  return ($_[0] <= $_[1]? $_[0]: $_[1]);
+}
+
 sub guessColumnPairs($$$)
 {
   my ($records, $tbl1, $tbl2) = @_;
   my %stats;
+
+  if(!$records
+  || $records > $tbl1->{'height'}
+  || $records > $tbl2->{'height'})
+  {
+    $records = min($tbl1->{'height'}, $tbl2->{'height'});
+    print(STDERR "guessing on $records records\n");
+  }
+
   foreach my $col1(@{$tbl1->{'cols'}})
   {
     foreach my $col2(@{$tbl2->{'cols'}})
@@ -226,7 +240,7 @@ sub guessColumnPairs($$$)
 
       foreach my $l(0 ... ($records - 1))
       {
-	my $rl = $tbl2->{'map'}{$tbl1->{'data'}{$mergeOn}[$l]} || 0;
+	my $rl = $tbl2->{'map'}{$tbl1->{'data'}{$mergeOn}[$l]} || $l;
 	if($tbl1->{'data'}{$col1}[$l] eq $tbl2->{'data'}{$col2}[$rl])
 	{ ++$stats{$id[0]}{$id[1]}; }
       }
