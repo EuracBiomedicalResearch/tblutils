@@ -283,10 +283,6 @@ if(defined($flags{'g'}))
 }
 
 # construct list of unique columns
-my %res;
-$res{'height'} = 0;
-$res{'cols'} = [];
-
 my %cmp;
 foreach my $col1(@{$tbl1{'cols'}})
 {
@@ -294,13 +290,16 @@ foreach my $col1(@{$tbl1{'cols'}})
   {
     $cmp{$col1} = 1
       if($col1 eq $col2);
-    
-    foreach my $c($col1, $col2)
-    {
-      push(@{$res{'cols'}}, $c)
-	if(!grep({$_ eq $c} @{$res{'cols'}}));
-    }
   }
+}
+    
+my %res;
+$res{'height'} = 0;
+$res{'cols'} = [];
+foreach my $c(@{$tbl1{'cols'}}, @{$tbl2{'cols'}})
+{
+  push(@{$res{'cols'}}, $c)
+    if(!grep({$_ eq $c} @{$res{'cols'}}));
 }
 
 # stats
