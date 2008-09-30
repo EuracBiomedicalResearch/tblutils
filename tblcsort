@@ -1,0 +1,95 @@
+#!/usr/bin/perl
+# tblcsort: sort columns of a CSV file
+# Copyright(c) 2008 EURAC, Institute of Generic Medicine
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+my %flags;
+getopts("n", \%flags);
+my ($file, @ord) = @ARGV;
+if(!$file)
+{
+  print(STDERR qq{$0 [-n] file [columns order]:
+Sort columns of a CSV file, alphabetically, numerically, or manually.
+CSV files are TAB separated, containing column labels on the first row.
+
+  -n:		sort numerically
+});
+  exit(2);
+}
+
+
+sub find(\@$)
+{
+  my ($arr, $elem) = @_;
+  foreach my $p(0 ... $#{$arr})
+  {
+    return $p if($arr->[$p] eq $elem);
+  }
+  return -1;
+}
+
+
+sub genmap($$)
+{
+  my ($cols, $ord) = @_;
+
+  my @new;
+  if(@{$ord})
+  {
+    @new = @{$ord};
+    foreach my $c(@{$cols})
+    {
+      push(@new, $c) if(find(@new, $c) < 0);
+    }
+  }
+  else
+  {
+    if(defined($flags{'n'}))
+    { @new = sort({($a =~ /^\d+$/ && $b =~ /^\d+$/? $a <=> $b: $a cmp $b)} @{$cols}); }
+    else
+    { @new = sort({$a cmp $b} @{$cols}); }
+  }
+
+  if($#{$cols} != $#new)
+  {
+    die("too many [unknown] columns given on the command line");
+  }
+  
+  my @map;
+  foreach my $p(0 ... $#{$cols})
+  {
+    my $np = find(@new, $cols->[$p]);
+    $map[$np] = $p;
+  }
+  
+  return @map;
+}
+
+
+# open the file and read columns
+open(FD, $file) or die("cannot open $file\n");
+$_ = <FD>;
+s/[\r\n]+$//;
+my @cols = split("\t", $_, -1);
+my @map = genmap(\@cols, \@ord);
+
+# remap
+seek(FD, 0, 0);
+while(<FD>)
+{
+  s/[\r\n]+$//;
+  my @data = split("\t", $_, -1);
+  die("line error at $file:$.:$#data") if($#data != $#{cols});
+
+  my @out;
+  foreach my $n(0 ... $#cols)
+  {
+    push(@out, $data[($map[$n])]);
+  }
+  print(join("\t", @out) . "\n");
+}
+
+close(FD);
