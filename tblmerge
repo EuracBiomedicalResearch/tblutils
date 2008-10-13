@@ -128,13 +128,19 @@ sub genMap($$$)
   }
 }
 
+sub notundef(\$)
+{
+  my $v = shift();
+  return (defined($$v) && ($$v || $$v =~ /^\d+$/)? $$v: "");
+}
+
 sub pushSimpleRecord($$$)
 {
   my ($res, $tbl, $l) = @_;
   my $lr = $res->{'height'};
   foreach my $col(@{$res->{'cols'}})
   {
-    $res->{'data'}{$col}[$lr] = ($tbl->{'data'}{$col}[$l] || "");
+    $res->{'data'}{$col}[$lr] = notundef($tbl->{'data'}{$col}[$l]);
   }
   ++$res->{'height'};
 }
@@ -147,13 +153,14 @@ sub pushSharedRecord($$$$$$)
   {
     if(!defined($cmp->{$col}))
     {
-      $res->{'data'}{$col}[$lr] = ($tbl1->{'data'}{$col}[$l1]
-	  || $tbl2->{'data'}{$col}[$l2] || "");
+      my $va = notundef($tbl1->{'data'}{$col}[$l1]);
+      my $vb = notundef($tbl2->{'data'}{$col}[$l2]);
+      $res->{'data'}{$col}[$lr] = ($va || $va =~ /^\d+$/? $va: $vb);
     }
     else
     {
       if($tbl1->{'data'}{$col}[$l1] eq $tbl2->{'data'}{$col}[$l2])
-      { $res->{'data'}{$col}[$lr] = ($tbl1->{'data'}{$col}[$l1] || ""); }
+      { $res->{'data'}{$col}[$lr] = notundef($tbl1->{'data'}{$col}[$l1]); }
       else
       {
 	print(STDERR "difference in $tbl1->{'data'}{$mergeOn}[$l1]/$col: " .
@@ -161,9 +168,9 @@ sub pushSharedRecord($$$$$$)
 	    "\t(2:$l2:$tbl2->{'data'}{$col}[$l2])\n");
 
 	if(defined($flags{'1'}))
-	{ $res->{'data'}{$col}[$lr] = ($tbl1->{'data'}{$col}[$l1] || "") }
+	{ $res->{'data'}{$col}[$lr] = notundef($tbl1->{'data'}{$col}[$l1]); }
 	elsif(defined($flags{'2'}))
-	{ $res->{'data'}{$col}[$lr] = ($tbl2->{'data'}{$col}[$l2] || "") }
+	{ $res->{'data'}{$col}[$lr] = notundef($tbl2->{'data'}{$col}[$l2]); }
 	else
 	{ die("cannot continue"); }
       }
