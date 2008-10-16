@@ -7,15 +7,18 @@ use locale;
 use Getopt::Std;
 
 my %flags;
-getopts("n", \%flags);
+getopts("nh", \%flags);
+my $SEP = ($ENV{'TBLSEP'} || "\t");
 my ($file, @ord) = @ARGV;
-if(!$file)
+if(!$file || defined($flags{'h'}))
 {
-  print(STDERR qq{$0 [-n] file [columns order]:
+  print(STDERR qq{$0 [-nh] file [columns order]:
 Sort columns of a CSV file, alphabetically, numerically, or manually.
 CSV files are TAB separated, containing column labels on the first row.
+You can change the column separator by setting the TBLSEP environment variable.
 
-  -n:		sort numerically
+  -n:	sort numerically
+  -h:	help summary
 });
   exit(2);
 }
@@ -24,7 +27,7 @@ CSV files are TAB separated, containing column labels on the first row.
 sub find(\@$)
 {
   my ($arr, $elem) = @_;
-  foreach my $p(0 ... $#{$arr})
+  foreach my $p(0 .. $#{$arr})
   {
     return $p if($arr->[$p] eq $elem);
   }
@@ -59,7 +62,7 @@ sub genmap($$)
   }
   
   my @map;
-  foreach my $p(0 ... $#{$cols})
+  foreach my $p(0 .. $#{$cols})
   {
     my $np = find(@new, $cols->[$p]);
     $map[$np] = $p;
@@ -73,23 +76,30 @@ sub genmap($$)
 open(FD, $file) or die("cannot open $file\n");
 $_ = <FD>;
 s/[\r\n]+$//;
-my @cols = split("\t", $_, -1);
+my @cols = split($SEP, $_, -1);
 my @map = genmap(\@cols, \@ord);
 
-# remap
-seek(FD, 0, 0);
+# remap (labels)
+my @out;
+foreach my $n(0 .. $#cols)
+{
+  push(@out, $cols[($map[$n])]);
+}
+print(join($SEP, @out) . "\n");
+
+# remap (contents)
 while(<FD>)
 {
   s/[\r\n]+$//;
-  my @data = split("\t", $_, -1);
+  my @data = split($SEP, $_, -1);
   die("line error at $file:$.:$#data") if($#data != $#{cols});
 
   my @out;
-  foreach my $n(0 ... $#cols)
+  foreach my $n(0 .. $#cols)
   {
     push(@out, $data[($map[$n])]);
   }
-  print(join("\t", @out) . "\n");
+  print(join($SEP, @out) . "\n");
 }
 
 close(FD);
