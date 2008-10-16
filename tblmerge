@@ -7,11 +7,11 @@ use locale;
 use Getopt::Std;
 
 my %flags;
-getopts("t12L:E:vkg:nc", \%flags);
+getopts("t12L:C:E:vkg:nc", \%flags);
 my ($mergeOn, $file1, $file2) = @ARGV;
 if(!$mergeOn || !$file1 || !$file2)
 {
-  print(STDERR qq{$0 [-t12LEvkgnc] key file1 file2:
+  print(STDERR qq{$0 [-t12LCEvkgnc] key file1 file2:
 Perform a (full) join on 'key' of two CSV files, performing a comparison of
 common columns. CSV files are TAB separated, containing column labels on the
 first row.
@@ -25,7 +25,8 @@ first row.
   -v:		verbose (show duplicate references anyway)
   -k:		keep going as far as possible on errors conditions
   -L expr:	run Perl 'expr' expression on each label
-  -E expr:	run Perl 'expr' expression on each cell (including labels)
+  -C expr:	run Perl 'expr' expression on each cell
+  -E expr:	run Perl 'expr' expression on all cells and labels
 });
   exit(2);
 }
@@ -67,8 +68,8 @@ sub loadTbl($$)
   {
     s/[\r\n]+$//;
     my @data = fetchRow($_);
-
     die("line error at $file:$.:$#data") if($#data != $#{$tbl->{'cols'}});
+    map({ eval($flags{'C'}) } @data) if(defined($flags{'C'}));
 
     my $n = 0;
     foreach my $col(@{$tbl->{'cols'}})
