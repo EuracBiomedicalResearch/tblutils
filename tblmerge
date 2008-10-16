@@ -7,14 +7,16 @@ use locale;
 use Getopt::Std;
 
 my %flags;
-getopts("t12L:C:E:vkg:nc", \%flags);
+getopts("t12L:C:E:vkg:nch", \%flags);
+my $SEP = ($ENV{'TBLSEP'} || "\t");
 my ($mergeOn, $file1, $file2) = @ARGV;
-if(!$mergeOn || !$file1 || !$file2)
+if(!$mergeOn || !$file1 || !$file2 || defined($flags{'h'}))
 {
   print(STDERR qq{$0 [-t12LCEvkgnc] key file1 file2:
 Perform a (full) join on 'key' of two CSV files, performing a comparison of
 common columns. CSV files are TAB separated, containing column labels on the
-first row.
+first row. You can change the column separator by setting the TBLSEP
+environment variable.
 
   -c:		common records only, all records otherwise
   -t:		strip spaces from cells
@@ -27,6 +29,7 @@ first row.
   -L expr:	run Perl 'expr' expression on each label
   -C expr:	run Perl 'expr' expression on each cell
   -E expr:	run Perl 'expr' expression on all cells and labels
+  -h:		help summary
 });
   exit(2);
 }
@@ -61,7 +64,7 @@ sub normNumbers($)
 
 sub fetchRow($)
 {
-  my @cols = split(/\t/, $_, -1);
+  my @cols = split($SEP, $_, -1);
   map({ stripSpaces($_); } @cols) if(defined($flags{'t'}));
   map({ normNumbers($_); } @cols) if(defined($flags{'n'}));
   map({ eval($flags{'E'}) } @cols) if(defined($flags{'E'}));
@@ -123,7 +126,7 @@ sub getRow($$)
 sub genMap($$$)
 {
   my ($tbl, $tblNo, $col) = @_;
-  foreach my $l(0 ... ($tbl->{'height'} - 1))
+  foreach my $l(0 .. ($tbl->{'height'} - 1))
   {
     my $mv = $tbl->{'data'}{$mergeOn}[$l];
     if(!defined($tbl->{'map'}{$mv}))
@@ -131,8 +134,8 @@ sub genMap($$$)
     else
     {
       my $ol = $tbl->{'map'}{$mv};
-      my $oline = join("\t", getRow($tbl, $ol));
-      my $line = join("\t", getRow($tbl, $l));
+      my $oline = join($SEP, getRow($tbl, $ol));
+      my $line = join($SEP, getRow($tbl, $l));
       my $cond = ($oline ne $line);
       if($cond || defined($flags{'v'}))
       {
@@ -264,7 +267,7 @@ sub guessColumnPairs($$$)
       my @id = sort(($col1, $col2));
       next if(defined($stats{$id[0]}{$id[1]}));
 
-      foreach my $l(0 ... ($records - 1))
+      foreach my $l(0 .. ($records - 1))
       {
 	my $rl = $tbl2->{'map'}{$tbl1->{'data'}{$mergeOn}[$l]} || $l;
 	if($tbl1->{'data'}{$col1}[$l] eq $tbl2->{'data'}{$col2}[$rl])
@@ -293,7 +296,7 @@ sub guessColumnPairs($$$)
 sub find(\@$)
 {
   my ($arr, $elem) = @_;
-  foreach my $p(0 ... $#{$arr})
+  foreach my $p(0 .. $#{$arr})
   {
     return $p if($arr->[$p] eq $elem);
   }
@@ -360,9 +363,9 @@ if(@uindex)
 }
 
 # output table
-print(join("\t", @{$res{'cols'}}) . "\n");
-foreach my $l(0 ... ($res{'height'} - 1))
+print(join($SEP, @{$res{'cols'}}) . "\n");
+foreach my $l(0 .. ($res{'height'} - 1))
 {
   my @row = getRow(\%res, $l);
-  print(join("\t", @row) . "\n");
+  print(join($SEP, @row) . "\n");
 }
