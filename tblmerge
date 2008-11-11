@@ -81,7 +81,7 @@ sub loadTbl($$)
   s/[\r\n]+$//;
   $tbl->{'cols'} = [fetchRow($_)];
   map({ eval($flags{'L'}) } @{$tbl->{'cols'}}) if(defined($flags{'L'}));
-  
+
   my $l = 0;
   while(<FD>)
   {
@@ -233,7 +233,7 @@ sub buildRecords($$$$$)
       if(!defined($tbl1->{'map'}{$mv}))
       {
 	push(@uindex, [$mv, 2]);
-	pushSimpleRecord($res, $tbl2, $l); 
+	pushSimpleRecord($res, $tbl2, $l);
       }
     }
   }
@@ -332,7 +332,7 @@ foreach my $col1(@{$tbl1{'cols'}})
       if($col1 eq $col2);
   }
 }
-    
+
 my %res;
 $res{'height'} = 0;
 $res{'cols'} = [];
@@ -342,9 +342,17 @@ foreach my $c(@{$tbl1{'cols'}}, @{$tbl2{'cols'}})
 }
 
 # stats
+my @cmpArr = keys(%cmp);
 print(STDERR (defined($flags{'c'})? "inner": "full") . " join on $mergeOn\n");
 print(STDERR "joining $tbl1{'height'} + $tbl2{'height'} rows\n");
-print(STDERR "shared columns: " . join(' ', keys(%cmp)) . "\n");
+print(STDERR "shared columns: " . join(' ', @cmpArr) . "\n");
+
+my @uniq;
+foreach my $c(@{$res{'cols'}})
+{
+  push(@uniq, $c) if(find(@cmpArr, $c) < 0);
+}
+print(STDERR "unique columns: " . join(' ', @uniq) . "\n");
 
 # build the resulting table
 my @uindex = buildRecords(\%res, \%cmp, $mergeOn, \%tbl1, \%tbl2);
