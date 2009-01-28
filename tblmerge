@@ -12,7 +12,7 @@ my $SEP = ($ENV{'TBLSEP'} || "\t");
 my ($mergeOn, $file1, $file2) = @ARGV;
 if(!$mergeOn || !$file1 || !$file2 || defined($flags{'h'}))
 {
-  print(STDERR qq{$0 [-t12LCEvkgnc] key file1 file2:
+  print(STDERR qq{$0 [-t12LCEivkgnc] key file1 file2:
 Perform a (full) join on 'key' of two CSV files, performing a comparison of
 common columns. CSV files are TAB separated, containing column labels on the
 first row. You can change the column separator by setting the TBLSEP
@@ -26,6 +26,7 @@ environment variable.
   -g N:		guess column pairs by comparing N cells, then exit
   -v:		verbose (show duplicate references anyway)
   -k:		keep going as far as possible on errors conditions
+  -i:		ignore empty cells for comparisons
   -L expr:	run Perl 'expr' expression on each label
   -C expr:	run Perl 'expr' expression on each cell
   -E expr:	run Perl 'expr' expression on all cells and labels
@@ -71,6 +72,24 @@ sub fetchRow($)
   return @cols;
 }
 
+sub isempty(\$)
+{
+  my $v = shift();
+  return !(defined($$v) && ($$v || $$v =~ /^\d+$/));
+}
+
+sub notundef(\$)
+{
+  my $v = shift();
+  return (defined($$v) && ($$v || $$v =~ /^\d+$/)? $$v: "");
+}
+
+sub aorb(\$\$)
+{
+  my ($a, $b) = @_;
+  return (isempty($$a)? $$b: $$a);
+}
+
 sub loadTbl($$)
 {
   my ($tbl, $file) = @_;
@@ -93,18 +112,20 @@ sub loadTbl($$)
     my $n = 0;
     foreach my $col(@{$tbl->{'cols'}})
     {
-      if(defined($tbl->{'data'}{$col}[$l]))
+      if(!defined($tbl->{'data'}{$col}[$l])
+      || (defined($flags{'i'}) && isempty($tbl->{'data'}{$col}[$l])))
+      { $tbl->{'data'}{$col}[$l] = notundef($data[$n]); }
+      else
       {
 	my $cond = ($tbl->{'data'}{$col}[$l] ne $data[$n]);
 	if($cond || defined($flags{'v'}))
 	{
 	  print(STDERR "column $col: differing values while performing column reduction\n" .
-	      "  old: $tbl->{'data'}{$col}[$l]\n" .
-	      "  new: $data[$n]\n");
+		"  old: $tbl->{'data'}{$col}[$l]\n" .
+		"  new: $data[$n]\n");
 	  die("cannot continue") if($cond && !defined($flags{'k'}));
 	}
       }
-      $tbl->{'data'}{$col}[$l] = $data[$n];
       ++$n;
     }
     ++$l;
@@ -148,12 +169,6 @@ sub genMap($$$)
   }
 }
 
-sub notundef(\$)
-{
-  my $v = shift();
-  return (defined($$v) && ($$v || $$v =~ /^\d+$/)? $$v: "");
-}
-
 sub pushSimpleRecord($$$)
 {
   my ($res, $tbl, $l) = @_;
@@ -171,11 +186,14 @@ sub pushSharedRecord($$$$$$)
   my $lr = $res->{'height'};
   foreach my $col(@{$res->{'cols'}})
   {
-    if(!defined($cmp->{$col}))
+    if(!defined($cmp->{$col})
+    || (defined($flags{'i'})
+     && (isempty($tbl1->{'data'}{$col}[$l1])
+      || isempty($tbl2->{'data'}{$col}[$l2]))))
     {
       my $va = notundef($tbl1->{'data'}{$col}[$l1]);
       my $vb = notundef($tbl2->{'data'}{$col}[$l2]);
-      $res->{'data'}{$col}[$lr] = ($va || $va =~ /^\d+$/? $va: $vb);
+      $res->{'data'}{$col}[$lr] = aorb($va, $vb);
     }
     else
     {
