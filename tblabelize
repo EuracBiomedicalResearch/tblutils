@@ -1,0 +1,47 @@
+#!/usr/bin/perl
+# tblabelize: label columns of an unlabeled file
+# Copyright(c) 2008 EURAC, Institute of Generic Medicine
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+my %flags;
+getopts("zn:", \%flags);
+my ($file, @names) = @ARGV;
+if(!$file)
+{
+  print(STDERR qq{$0 [-a] file [column names]:
+Assign numerical or custom labels to an unlabeled CSV file.
+CSV files are TAB separated by default. You can change the column separator
+by setting the TBLSEP environment variable.
+
+  -z:		start from zero
+  -n N:		start from N
+});
+  exit(2);
+}
+
+
+# open the file and read columns
+open(FD, $file) or die("cannot open $file\n");
+$_ = <FD>;
+s/[\r\n]+$//;
+my @cols = split("\t", $_, -1);
+
+# assign names
+die("too many columns given on the command line") if($#names > $#cols);
+my @res = @names;
+my $z = (defined($flags{'z'})? 0: defined($flags{'n'})? $flags{'n'}: 1);
+
+foreach my $n(1 .. ($#cols - $#res))
+{
+  my $cn = $n + $#names + $z;
+  push(@res, $cn);
+}
+
+# output
+print(join("\t", @res) . "\n");
+print(join("\t", @cols) . "\n");
+print(<FD>) while(<FD>);
+close(FD);

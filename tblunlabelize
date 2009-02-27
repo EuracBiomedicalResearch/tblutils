@@ -1,0 +1,4 @@
+#!/bin/sh
+# tblunlabelize: remove labels from a labeled CSV file
+# Copyright(c) 2008 EURAC, Institute of Generic Medicine
+tail -n+2 "$@"
