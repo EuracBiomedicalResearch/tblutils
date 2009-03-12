@@ -11,7 +11,7 @@ getopts("zn:", \%flags);
 my ($file, @names) = @ARGV;
 if(!$file)
 {
-  print(STDERR qq{$0 [-a] file [column names]:
+  print(STDERR qq{$0 [-zN] file [column names]:
 Assign numerical or custom labels to an unlabeled CSV file.
 CSV files are TAB separated by default. You can change the column separator
 by setting the TBLSEP environment variable.
