@@ -1,6 +1,6 @@
 /*
  * tbltransp2: fast table transposition - implementation
- * Copyright(c) 2008 EURAC, Institute of Generic Medicine
+ * Copyright(c) 2008 EURAC, Institute of Genetic Medicine
  */
 
 /*

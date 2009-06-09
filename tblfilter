@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # tblfilter: filter CSV row through generalized conditions
-# Copyright(c) 2009 EURAC, Institute of Generic Medicine
+# Copyright(c) 2009 EURAC, Institute of Genetic Medicine
 use strict;
 use warnings;
 use locale;

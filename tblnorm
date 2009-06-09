@@ -1,6 +1,6 @@
 #!/bin/sh
 # tblnorm: normalize a table (reorder in both directions)
-# Copyright(c) 2008 EURAC, Institute of Generic Medicine
+# Copyright(c) 2008 EURAC, Institute of Genetic Medicine
 
 key=$1
 file=$2

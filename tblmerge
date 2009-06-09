@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # tblmerge: join CSV tables
-# Copyright(c) 2008 EURAC, Institute of Generic Medicine
+# Copyright(c) 2008 EURAC, Institute of Genetic Medicine
 use strict;
 use warnings;
 use locale;
