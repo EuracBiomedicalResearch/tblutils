@@ -1,0 +1,60 @@
+#!/usr/bin/perl
+# tblfilter: filter CSV row through generalized conditions
+# Copyright(c) 2009 EURAC, Institute of Generic Medicine
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+my %flags;
+getopts("e:", \%flags);
+my $SEP = ($ENV{'TBLSEP'} || "\t");
+my ($file) = @ARGV;
+if(!$file || !defined($flags{'e'}))
+{
+  print(STDERR qq{$0 -e expression file:
+Filter the rows of the specified CSV file through an arbitrary Perl expression.
+CSV files are TAB separated, containing column labels on the first row.
+You can change the column separator by setting the TBLSEP environment variable.
+Just the lines for which the expression returns non-zero are returned.
+You can refer to \$N[x] for column positions or \$L\{name\} for column labels
+relative to the current row. For example:
+
+  -e '\$N[1] > 1':	returns all the lines for which the first column is > 1
+  -e '\$L\{test\} > 1':	returns all the lines for which the column 'test' is > 1
+});
+  exit(2);
+}
+
+
+# open the file and read columns
+open(FD, $file) or die("cannot open $file\n");
+$_ = <FD>;
+s/[\r\n]+$//;
+print("$_\n");
+my @cols = split($SEP, $_, -1);
+
+# remap
+while(<FD>)
+{
+  s/[\r\n]+$//;
+  my @data = split($SEP, $_, -1);
+  die("line error at $file:$.:$#data") if($#data != $#{cols});
+
+  # build an hash that can be used in the expression
+  my $r = 0;
+  {
+    my %L;
+    my @N;
+    foreach my $n(0 ... $#cols)
+    {
+      $N[$n + 1] = $data[$n];
+      $L{$cols[$n]} = $data[$n];
+    }
+
+    $r = eval($flags{'e'});
+  }
+  print(join($SEP, @data) . "\n") if($r);
+}
+
+close(FD);
