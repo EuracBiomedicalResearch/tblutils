@@ -24,6 +24,7 @@ simple one-line commands:
   bd y x n	Write bold double n at xy
   s y x s	Write string s at xy
   bs y x s	Write bold string s at xy
+  f y x f	Write formula f at xy
 
 The following flags are supported:
 
@@ -90,5 +91,10 @@ while(<STDIN>)
   {
     my ($y, $x, $s) = ($args =~ /^(\d+) (\d+) (.*)/);
     $ws->write_string($y, $x, $s, $f_bold);
+  }
+  elsif($cmd eq "f")
+  {
+    my ($y, $x, $f) = ($args =~ /^(\d+) (\d+) (.*)/);
+    $ws->write_formula($y, $x, "=$f");
   }
 }

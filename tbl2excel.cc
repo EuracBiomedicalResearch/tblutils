@@ -577,7 +577,7 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
   // write a warning on the sheet if the conversion will overflow the Excel
   // limits of 256 columns or 65536 rows
   if(md.colTypes.size() > 255 || md.m->size() > 65535)
-    fprintf(fd, "bs %lu %lu WARNING: output truncated due to Excel row/column limits!\n", y++, 0);
+    fprintf(fd, "bs %lu %lu WARNING: output truncated due to Excel row/column limits!\n", y++, 0LU);
 
   // write the labels table, if any
   if(md.labels)
@@ -603,7 +603,7 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
       // NaNs
       if(dp.undefStr.find(buf) != dp.undefStr.end())
       {
-	fprintf(fd, "f %lu %lu =NA()\n", y, c);
+	fprintf(fd, "f %lu %lu NA()\n", y, c);
 	continue;
       }
 
