@@ -7,3 +7,17 @@ User's documentation is on the WiKi:
 
     https://wiki.gm.eurac.edu/index.php?title=Genetic_Medicine_Tools
 
+
+Notes
+-----
+
+tbl2excel was adapted from gm_snp2x/gm_txt2gmo. It uses the Perl helper
+"tbl2excel-helper" internally for the libspreadsheet-writeexcel-perl module.
+
+This is *not* ideal, but:
+
+* there seems to be no library to write Excel files directly in C/C++,
+* a Perl script was too slow for the reading/detection process.
+
+The gm_txt2gmo auto-detection mechanism was already excellent, and was
+simplified to ignore column lengths.
