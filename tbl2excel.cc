@@ -574,6 +574,11 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
   // start a new sheet
   fprintf(fd, "ns %s\n", sheetName.c_str());
 
+  // write a warning on the sheet if the conversion will overflow the Excel
+  // limits of 256 columns or 65536 rows
+  if(md.colTypes.size() > 255 || md.m->size() > 65535)
+    fprintf(fd, "bs %lu %lu WARNING: output truncated due to Excel row/column limits!\n", y++, 0);
+
   // write the labels table, if any
   if(md.labels)
   {
