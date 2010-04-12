@@ -51,7 +51,7 @@ using std::auto_ptr;
  */
 
 // detection constants
-const char helperCmd[] = "tbl2excel-helper";
+const char helperCmd[] = "./tbl2excel-helper";
 const int defaultDetectThr = 99;
 const int detectLines = 3;
 const char fallbackEnv[] = "TBLSEP";
@@ -569,8 +569,6 @@ uniqueTokens(set<string>& dst, const char* str)
 void
 output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_params& dp)
 {
-  size_t y = 0;
-
   // start a new sheet
   fprintf(fd, "ns %s\n", sheetName.c_str());
 
@@ -578,25 +576,22 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
   // limits of 256 columns or 65536 rows
   if(md.colTypes.size() > 255 || md.m->size() > 65535)
   {
-    fprintf(fd, "bs %lu %lu WARNING: output truncated due to Excel row/column limits!\n", y++, 0LU);
+    fprintf(fd, "b a s WARNING: output truncated due to Excel row/column limits!\nnr\n");
     cerr << sheetName << ": warning: output truncated due to Excel row/column limits!\n";
   }
 
   // write the labels table, if any
   if(md.labels)
   {
-    size_t x = 0;
-
     for(string_row::const_iterator it = md.m->front().begin();
 	it != md.m->front().end(); ++it)
-      fprintf(fd, "bs %lu %lu %s\n", y, x++, it->c_str());
-
-    ++y;
+      fprintf(fd, "b a s %s\n", it->c_str());
+    fprintf(fd, "nr\n");
   }
 
   // start writing the sheet
   for(string_matrix::const_iterator it = md.m->begin() + md.labels;
-      it != md.m->end(); ++it, ++y)
+      it != md.m->end(); ++it)
   {
     for(size_t c = 0; c != md.colTypes.size(); ++c)
     {
@@ -606,7 +601,7 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
       // NaNs
       if(dp.undefStr.find(buf) != dp.undefStr.end())
       {
-	fprintf(fd, "f %lu %lu NA()\n", y, c);
+	fprintf(fd, "a f NA()\n");
 	continue;
       }
 
@@ -614,18 +609,20 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
       switch(t)
       {
       case int_type:
-	fprintf(fd, "i %lu %lu %s\n", y, c, buf.c_str());
+	fprintf(fd, "a i %s\n", buf.c_str());
 	break;
 
       case double_type:
-	fprintf(fd, "d %lu %lu %s\n", y, c, buf.c_str());
+	fprintf(fd, "a d %s\n", buf.c_str());
 	break;
 
       case string_type:
-	fprintf(fd, "s %lu %lu %s\n", y, c, buf.c_str());
+	fprintf(fd, "a s %s\n", buf.c_str());
 	break;
       }
     }
+
+    fprintf(fd, "nr\n");
   }
 }
 
