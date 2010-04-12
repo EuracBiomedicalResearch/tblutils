@@ -51,7 +51,7 @@ using std::auto_ptr;
  */
 
 // detection constants
-const char helperCmd[] = "./tbl2excel-helper";
+const char helperCmd[] = "tbl2excel-helper";
 const int defaultDetectThr = 99;
 const int detectLines = 3;
 const char fallbackEnv[] = "TBLSEP";
