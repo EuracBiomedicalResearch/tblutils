@@ -19,12 +19,23 @@ simple one-line commands:
 
   ns [name]	Begin new worksheet (with "name")
   i y x n	Write integer n at xy
-  bi y x n	Write bold integer n at xy
   d y x n	Write double n at xy
-  bd y x n	Write bold double n at xy
   s y x s	Write string s at xy
-  bs y x s	Write bold string s at xy
   f y x f	Write formula f at xy
+  b ...		Run the next command with bold
+  a c ...	Run the command c at cursor and move to next column
+  nr		Move to next row
+
+Examples:
+
+  ns test		Start worksheet "test"
+  b a s Column 1	Write first column header
+  b a s Column 2	Second column header
+  nr			Move to next row
+  a d 1.0		First column data
+  a d 2.0		Second column data
+  s 2 0	Test 1		Absolute movement (row 3, column 1)
+  s 2 1	Test 2		Absolute movement (row 3, column 2)
 
 The following flags are supported:
 
@@ -45,56 +56,96 @@ if($file) {
 }
 
 # define shared variables and formats
-binmode(STDOUT);
-my $wb = Spreadsheet::WriteExcel->new($fd);
-my $ws = undef;
+binmode($fd);
+local $g::wb = Spreadsheet::WriteExcel->new($fd);
 
-my $f_bold = $wb->add_format(bold => 1);
-my $f_double = $wb->add_format(num_format => "0.000000");
-my $f_bold_double = $wb->add_format(bold => 1, num_format => "0.000000");
+local $g::f_bold = $g::wb->add_format(bold => 1);
+local $g::f_double = $g::wb->add_format(num_format => "0.000000");
+local $g::f_bold_double = $g::wb->add_format(bold => 1, num_format => "0.000000");
 
-while(<STDIN>)
+# current state
+local $g::cs = undef;
+local $g::cx = 0;
+local $g::cy = 0;
+local $g::cb = 0;
+
+sub at($$)
 {
-  chomp;
+  my ($y, $x) = @_;
+  $g::cy = $y;
+  $g::cx = $x;
+  return @_;
+}
+
+# command handlers
+sub parse($);
+
+sub parse($)
+{
+  $_ = shift;
   my ($cmd, $args) = /^(\S+)\s*(.*)/;
+  return if(!$cmd);
 
   if($cmd eq "ns")
   {
-    $ws = $wb->add_worksheet($args);
+    $g::cs = $g::wb->add_worksheet($args);
+  }
+  elsif($cmd eq "nr")
+  {
+    ++$g::cy;
+    $g::cx = 0;
+  }
+  elsif($cmd eq "b")
+  {
+    $g::cb = !$g::cb;
+    parse($args);
+    $g::cb = !$g::cb;
+  }
+  elsif($cmd eq "a")
+  {
+    my ($ncmd, $nargs) = ($args =~ /^(\S+)\s*(.*)/);
+    parse("$ncmd $g::cy $g::cx $nargs");
+    ++$g::cx;
   }
   elsif($cmd eq "i")
   {
     my ($y, $x, $n) = ($args =~ /^(\d+) (\d+) (.*)/);
-    $ws->write_number($y, $x, $n);
-  }
-  elsif($cmd eq "bi")
-  {
-    my ($y, $x, $n) = ($args =~ /^(\d+) (\d+) (.*)/);
-    $ws->write_number($y, $x, $n, $f_bold);
+    $g::cs->write_number(at($y, $x), $n, ($g::cb? $g::f_bold: undef));
   }
   elsif($cmd eq "d")
   {
     my ($y, $x, $n) = ($args =~ /^(\d+) (\d+) (.*)/);
-    $ws->write_number($y, $x, $n, $f_double);
-  }
-  elsif($cmd eq "bd")
-  {
-    my ($y, $x, $n) = ($args =~ /^(\d+) (\d+) (.*)/);
-    $ws->write_number($y, $x, $n, $f_bold_double);
+    $g::cs->write_number(at($y, $x), $n, ($g::cb? $g::f_bold_double: $g::f_double));
   }
   elsif($cmd eq "s")
   {
     my ($y, $x, $s) = ($args =~ /^(\d+) (\d+) (.*)/);
-    $ws->write_string($y, $x, $s);
-  }
-  elsif($cmd eq "bs")
-  {
-    my ($y, $x, $s) = ($args =~ /^(\d+) (\d+) (.*)/);
-    $ws->write_string($y, $x, $s, $f_bold);
+    $g::cs->write_string(at($y, $x), $s, ($g::cb? $g::f_bold: undef));
   }
   elsif($cmd eq "f")
   {
     my ($y, $x, $f) = ($args =~ /^(\d+) (\d+) (.*)/);
-    $ws->write_formula($y, $x, "=$f");
+    $g::cs->write_formula(at($y, $x), "=$f", ($g::cb? $g::f_bold: undef));
   }
+
+  # backward aliases
+  elsif($cmd eq "bi")
+  {
+    parse("b i $args");
+  }
+  elsif($cmd eq "bd")
+  {
+    parse("b d $args");
+  }
+  elsif($cmd eq "bs")
+  {
+    parse("b s $args");
+  }
+}
+
+# main
+while(<STDIN>)
+{
+  chomp;
+  parse($_);
 }
