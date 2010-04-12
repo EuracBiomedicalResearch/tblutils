@@ -89,6 +89,7 @@ sub parse($)
   if($cmd eq "ns")
   {
     $g::cs = $g::wb->add_worksheet($args);
+    $g::cx = $g::cy = $g::cb = 0;
   }
   elsif($cmd eq "nr")
   {
