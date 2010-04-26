@@ -4,6 +4,7 @@
 use warnings;
 use strict;
 use locale;
+use POSIX qw{locale_h};
 use Getopt::Std;
 use Spreadsheet::WriteExcel;
 
@@ -56,6 +57,7 @@ if($file) {
 }
 
 # define shared variables and formats
+my $thousandsSep = localeconv()->{'thousands_sep'} || ',';
 binmode($fd);
 local $g::wb = Spreadsheet::WriteExcel->new($fd);
 
@@ -111,11 +113,13 @@ sub parse($)
   elsif($cmd eq "i")
   {
     my ($y, $x, $n) = ($args =~ /^(\d+) (\d+) (.*)/);
+    $n =~ s/\Q$thousandsSep\E//g;
     $g::cs->write_number(at($y, $x), $n, ($g::cb? $g::f_bold: undef));
   }
   elsif($cmd eq "d")
   {
     my ($y, $x, $n) = ($args =~ /^(\d+) (\d+) (.*)/);
+    $n =~ s/\Q$thousandsSep\E//g;
     $g::cs->write_number(at($y, $x), $n, ($g::cb? $g::f_bold_double: $g::f_double));
   }
   elsif($cmd eq "s")

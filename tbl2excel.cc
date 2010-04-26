@@ -440,6 +440,20 @@ classifyColumn(const detect_params& dp, size_t c,
     if(t == string_type)
     {
       char* tmp;
+
+      // remove thousand separators
+      if(*lc->thousands_sep)
+      {
+	string::iterator it = buf.begin();
+	while(it != buf.end())
+	{
+	  if(*it == *lc->thousands_sep)
+	    buf.erase(it);
+	  else
+	    ++it;
+	}
+      }
+
       strtod(buf.c_str(), &tmp);
       if(!*tmp) t = double_type;
     }
@@ -705,6 +719,7 @@ main(int argc, char* argv[]) try
   }
 
   // defaults
+  setlocale(LC_ALL, "");
   if(!dp.undefStr.size()) uniqueTokens(dp.undefStr, defaultUndefStr);
 
   // open comm with helper
