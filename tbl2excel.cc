@@ -43,6 +43,9 @@ using std::auto_ptr;
 
 // c headers
 #include <locale.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
 #include <stdio.h>
 
 
