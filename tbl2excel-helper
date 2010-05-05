@@ -29,7 +29,7 @@ simple one-line commands:
 
 Examples:
 
-  ns test		Start worksheet "test"
+  ns test		Start worksheet "test" (mandatory!)
   b a s Column 1	Write first column header
   b a s Column 2	Second column header
   nr			Move to next row

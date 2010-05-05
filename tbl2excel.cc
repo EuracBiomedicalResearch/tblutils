@@ -55,6 +55,8 @@ using std::auto_ptr;
 
 // detection constants
 const char helperCmd[] = "tbl2excel-helper";
+const size_t rowLimit = 65535;
+const size_t colLimit = 255;
 const int defaultDetectThr = 99;
 const int detectLines = 3;
 const char fallbackEnv[] = "TBLSEP";
@@ -120,6 +122,57 @@ sprintf2(const char* fmt, ...)
 
   return string(buf.data(), n);
 }
+
+
+class Progress
+{
+  long max;
+  const char* type;
+  bool clean;
+  bool tty;
+
+public:
+  Progress(long max, const char* type)
+  : max(max), type(type), clean(false)
+  {
+    tty = isatty(STDERR_FILENO);
+  }
+
+
+  ~Progress() throw()
+  {
+    cleanup();
+  }
+
+
+  void
+  remax(long newMax)
+  {
+    max = newMax;
+  }
+
+
+  void
+  operator()(long v)
+  {
+    if(!tty) return;
+
+    cerr << v << ' ';
+    if(type) cerr << type;
+    cerr << ' ' << (max? (v * 100 / max): 100) << "%\r";
+  }
+
+
+  void
+  cleanup()
+  {
+    if(clean || !tty) return;
+
+    clean = true;
+    operator()(max);
+    cerr << '\n';
+  }
+};
 
 
 
@@ -589,9 +642,8 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
   // start a new sheet
   fprintf(fd, "ns %s\n", sheetName.c_str());
 
-  // write a warning on the sheet if the conversion will overflow the Excel
-  // limits of 256 columns or 65536 rows
-  if(md.colTypes.size() > 255 || md.m->size() > 65535)
+  // write a warning on the sheet if the conversion will overflow the Excel limits
+  if(md.colTypes.size() > colLimit || md.m->size() > rowLimit)
   {
     fprintf(fd, "b a s WARNING: output truncated due to Excel row/column limits!\nnr\n");
     cerr << sheetName << ": warning: output truncated due to Excel row/column limits!\n";
@@ -607,10 +659,17 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
   }
 
   // start writing the sheet
-  for(string_matrix::const_iterator it = md.m->begin() + md.labels;
-      it != md.m->end(); ++it)
+  size_t rows = min<size_t>(md.m->end() - md.m->begin() - md.labels, rowLimit);
+  size_t cols = min<size_t>(md.colTypes.size(), colLimit);
+  size_t steps = max<size_t>(1, rows / 100);
+  Progress progress(rows, "rows");
+
+  string_matrix::const_iterator it = md.m->begin() + md.labels;
+  for(size_t x = 0; x != rows; ++x, ++it)
   {
-    for(size_t c = 0; c != md.colTypes.size(); ++c)
+    if(!(x % steps)) progress(x);
+
+    for(size_t c = 0; c != cols; ++c)
     {
       datatype_t t = md.colTypes[c];
       const string& buf = (*it)[c];
