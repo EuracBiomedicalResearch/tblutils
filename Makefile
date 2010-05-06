@@ -11,7 +11,8 @@ PREFIX := /usr/local
 # Config
 TBLTRANSP2_OBJECTS = tbltransp2.o
 TBL2EXCEL_OBJECTS = tbl2excel.o
-TARGETS = tbltransp2 tbl2excel tbl2excel-helper
+TARGETS = tblabelize tblcsort tblfilter tblmerge tblnorm tbltransp \
+	tblunlabelize tbltransp2 tbl2excel-helper tbl2excel
 
 
 # Rules
@@ -35,7 +36,7 @@ clean:
 	rm -rf *.o *.d core ii_files $(TARGETS)
 
 install: $(TARGETS)
-	install $(TARGETS) $(DESTDIR)$(PREFIX)/bin/
+	install -p -t $(DESTDIR)$(PREFIX)/bin/ $(TARGETS)
 
 
 # Dependencies
