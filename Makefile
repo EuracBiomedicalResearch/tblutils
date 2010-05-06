@@ -4,15 +4,19 @@
 CXXFLAGS += -ggdb3 -ansi $(CWARN)
 CPPFLAGS += -MD
 
+# Paths
+DESTDIR :=
+PREFIX := /usr/local
+
 # Config
 TBLTRANSP2_OBJECTS = tbltransp2.o
 TBL2EXCEL_OBJECTS = tbl2excel.o
-TARGETS = tbltransp2 tbl2excel
+TARGETS = tbltransp2 tbl2excel tbl2excel-helper
 
 
 # Rules
 .SUFFIXES: .cc .o
-.PHONY: all clean
+.PHONY: all clean install
 
 .cc.o:
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
@@ -29,6 +33,9 @@ tbl2excel: $(TBL2EXCEL_OBJECTS)
 
 clean:
 	rm -rf *.o *.d core ii_files $(TARGETS)
+
+install: $(TARGETS)
+	install $(TARGETS) $(DESTDIR)$(PREFIX)/bin/
 
 
 # Dependencies
