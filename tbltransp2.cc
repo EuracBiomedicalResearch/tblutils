@@ -34,12 +34,12 @@ using std::vector;
 void
 help(char* argv[])
 {
-    cerr << argv[0] << ": bad parameters:\n"
-	 << "Usage: " << argv[0] << " [-h] file\n"
-	 << "Transpose the contents of a CSV file. CSV files are TAB separated by default.\n"
-	 << "You can change the column separator by setting the TBLSEP environment variable.\n"
-	 << "\n"
-	 << "  -h:	help summary\n";
+  cerr << argv[0] << ": bad parameters:\n"
+    << "Usage: " << argv[0] << " [-h] file\n"
+    << "Transpose the contents of a CSV file. CSV files are TAB separated by default.\n"
+    << "You can change the column separator by setting the TBLSEP environment variable.\n"
+    << "\n"
+    << "  -h:	help summary\n";
 }
 
 
