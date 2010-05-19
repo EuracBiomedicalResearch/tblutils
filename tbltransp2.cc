@@ -35,11 +35,11 @@ void
 help(char* argv[])
 {
   cerr << argv[0] << ": bad parameters:\n"
-    << "Usage: " << argv[0] << " [-h] file\n"
-    << "Transpose the contents of a CSV file. CSV files are TAB separated by default.\n"
-    << "You can change the column separator by setting the TBLSEP environment variable.\n"
-    << "\n"
-    << "  -h:	help summary\n";
+       << "Usage: " << argv[0] << " [-h] file\n"
+       << "Transpose the contents of a CSV file. CSV files are TAB separated by default.\n"
+       << "You can change the column separator by setting the TBLSEP environment variable.\n"
+       << "\n"
+       << "  -h:	help summary\n";
 }
 
 
@@ -118,7 +118,13 @@ main(int argc, char* argv[])
     }
   }
   if(row.size())
-    cerr << argv[0] << ": missing final newline, discarding last row!\n";
+  {
+    // missing final newline
+    cerr << argv[0] << ": warning: missing final newline!\n";
+    addr[addrLen] = 0;
+    row.push_back(s);
+    m.push_back(row);
+  }
 
   // start writing back
   for(size_t x = 0; x != m.front().size(); ++x)
