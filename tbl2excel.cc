@@ -9,13 +9,10 @@
  * Headers
  */
 
+// local headers
+#include "shared.hh"
+
 // base headers
-#include <stdexcept>
-using std::runtime_error;
-
-#include <vector>
-using std::vector;
-
 #include <string>
 using std::string;
 
@@ -28,15 +25,6 @@ using std::set;
 #include <utility>
 using std::min;
 using std::max;
-
-#include <fstream>
-using std::ifstream;
-using std::ofstream;
-using std::istream;
-using std::ostream;
-
-#include <iostream>
-using std::cerr;
 
 #include <memory>
 using std::auto_ptr;
@@ -94,134 +82,6 @@ struct detect_params
   bool exact;
   bool labels;
   bool coalesce;
-};
-
-
-/*
- * Generics
- */
-
-#define ARRAY_LENGTH(X) (sizeof(X) / sizeof(*X))
-
-string
-sprintf2(const char* fmt, ...)
-{
-  int n;
-  vector<char> buf(64);
-
-  va_list vl;
-  for(;;)
-  {
-    va_start(vl, fmt);
-    n = vsnprintf(buf.data(), buf.size(), fmt, vl);
-    va_end(vl);
-
-    if(n > -1 && static_cast<size_t>(n) < buf.size()) break;
-    buf.resize((n > -1? n + 1: buf.size() * 2));
-  }
-
-  return string(buf.data(), n);
-}
-
-
-class Progress
-{
-  long max;
-  const char* type;
-  bool clean;
-  bool tty;
-
-public:
-  Progress(long max, const char* type)
-  : max(max), type(type), clean(false)
-  {
-    tty = isatty(STDERR_FILENO);
-  }
-
-
-  ~Progress() throw()
-  {
-    cleanup();
-  }
-
-
-  void
-  remax(long newMax)
-  {
-    max = newMax;
-  }
-
-
-  void
-  operator()(long v)
-  {
-    if(!tty) return;
-
-    cerr << v << ' ';
-    if(type) cerr << type;
-    cerr << ' ' << (max? (v * 100 / max): 100) << "%\r";
-  }
-
-
-  void
-  cleanup()
-  {
-    if(clean || !tty) return;
-
-    clean = true;
-    operator()(max);
-    cerr << '\n';
-  }
-};
-
-
-
-/*
- * I/O helpers
- */
-
-template<class T>
-class named_stream: public T
-{
-  const char* const file_;
-
-public:
-  named_stream(const char* file)
-  : T(file), file_(file)
-  {}
-
-  const char*
-  file() const
-  { return file_; }
-};
-
-
-typedef named_stream<istream> named_istream;
-typedef named_stream<ostream> named_ostream;
-typedef named_stream<ifstream> named_ifstream;
-typedef named_stream<ofstream> named_ofstream;
-
-
-class namedio_error: public runtime_error
-{
-public:
-  namedio_error(const char* file, const char* what)
-  : runtime_error(sprintf2("%s:%lu: %s", file, what))
-  {}
-
-  namedio_error(const char* file, int line, const char* what)
-  : runtime_error(sprintf2("%s:%lu: %s", file, line, what))
-  {}
-
-  template<class T>
-  namedio_error(const named_stream<T>& fd, const char* what)
-  : runtime_error(sprintf2("%s: %s", fd.file(), what))
-  {}
-
-  template<class T>
-  namedio_error(const named_stream<T>& fd, int line, const char* what)
-  : runtime_error(sprintf2("%s:%lu: %s", fd.file(), line, what))
-  {}
 };
 
 

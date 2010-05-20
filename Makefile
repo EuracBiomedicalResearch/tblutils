@@ -9,10 +9,11 @@ DESTDIR :=
 PREFIX := /usr/local
 
 # Config
-TBLTRANSP2_OBJECTS = tbltransp2.o
-TBL2EXCEL_OBJECTS = tbl2excel.o
+TBLTRANSP2_OBJECTS = tbltransp2.o shared.o
+TBL2EXCEL_OBJECTS = tbl2excel.o shared.o
+BUILT = tbltransp2 tbl2excel
 TARGETS = tblabelize tblcsort tblfilter tblmerge tblnorm tbltransp \
-	tblunlabelize tbltransp2 tbl2excel-helper tbl2excel
+	tblunlabelize tbl2excel-helper $(BUILT)
 
 
 # Rules
@@ -33,7 +34,7 @@ tbl2excel: $(TBL2EXCEL_OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $(TBL2EXCEL_OBJECTS) $(LDFLAGS) $(LDADD)
 
 clean:
-	rm -rf *.o *.d core ii_files $(TARGETS)
+	rm -rf *.o *.d core ii_files $(BUILT)
 
 install: $(TARGETS)
 	install -p -t $(DESTDIR)$(PREFIX)/bin/ $(TARGETS)

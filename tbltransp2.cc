@@ -7,24 +7,11 @@
  * Headers
  */
 
-// system headers
-#include <iostream>
-using std::cerr;
-using std::cout;
-
-#include <vector>
-using std::vector;
-
+// local headers
+#include "shared.hh"
 
 // c headers
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <string.h>
-
 
 
 /*
@@ -44,7 +31,7 @@ help(char* argv[])
 
 
 int
-main(int argc, char* argv[])
+main(int argc, char* argv[]) try
 {
   int arg;
   while((arg = getopt(argc, argv, "h")) != -1)
@@ -74,57 +61,9 @@ main(int argc, char* argv[])
     sep = *envSep;
 
   // open the file
-  int fd = open(file, O_RDONLY);
-  if(fd < 0)
-  {
-    cerr << argv[0] << ": cannot open " << file << "\n";
-    return EXIT_FAILURE;
-  }
-
-  // map the file
-  struct stat stBuf;
-  fstat(fd, &stBuf);
-  size_t addrLen = stBuf.st_size;
-  char* addr = (char*)mmap(NULL, addrLen, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-  if(!addr)
-  {
-    cerr << argv[0] << ": cannot map " << file << "\n";
-    return EXIT_FAILURE;
-  }
-
-  // start reading
-  vector<vector<const char*> > m;
-  vector<const char*> row;
-  char* s = addr;
-  for(char* p = s; p != addr + addrLen; ++p)
-  {
-    if(*p == '\n')
-    {
-      *p = 0;
-      row.push_back(s);
-      s = p + 1;
-      m.push_back(row);
-      row.clear();
-    }
-    else if(*p == '\r')
-    {
-      *p = 0;
-    }
-    else if(*p == sep)
-    {
-      *p = 0;
-      row.push_back(s);
-      s = p + 1;
-    }
-  }
-  if(row.size())
-  {
-    // missing final newline
-    cerr << argv[0] << ": warning: missing final newline!\n";
-    addr[addrLen] = 0;
-    row.push_back(s);
-    m.push_back(row);
-  }
+  int fd;
+  char* addr;
+  char_matrix& m = *mapCharMatrix(fd, &addr, file, sep);
 
   // start writing back
   for(size_t x = 0; x != m.front().size(); ++x)
@@ -134,4 +73,9 @@ main(int argc, char* argv[])
       cout << sep << m[y][x];
     cout << '\n';
   }
+}
+catch(runtime_error& e)
+{
+  cerr << e.what() << std::endl;
+  return EXIT_FAILURE;
 }
