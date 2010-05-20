@@ -10,8 +10,9 @@ PREFIX := /usr/local
 
 # Config
 TBLTRANSP2_OBJECTS = tbltransp2.o shared.o
+TBLMERGE2_OBJECTS = tblmerge2.o shared.o
 TBL2EXCEL_OBJECTS = tbl2excel.o shared.o
-BUILT = tbltransp2 tbl2excel
+BUILT = tbltransp2 tblmerge2 tbl2excel
 TARGETS = tblabelize tblcsort tblfilter tblmerge tblnorm tbltransp \
 	tblunlabelize tbl2excel-helper $(BUILT)
 
@@ -29,6 +30,9 @@ all: $(TARGETS)
 
 tbltransp2: $(TBLTRANSP2_OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $(TBLTRANSP2_OBJECTS) $(LDFLAGS) $(LDADD)
+
+tblmerge2: $(TBLMERGE2_OBJECTS)
+	$(CXX) $(CXXFLAGS) -o $@ $(TBLMERGE2_OBJECTS) $(LDFLAGS) $(LDADD)
 
 tbl2excel: $(TBL2EXCEL_OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $(TBL2EXCEL_OBJECTS) $(LDFLAGS) $(LDADD)
