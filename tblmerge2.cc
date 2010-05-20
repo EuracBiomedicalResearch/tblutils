@@ -42,6 +42,7 @@ help(char* argv[])
        << "column labels on the first row. You can change the column separator\n"
        << "by setting the TBLSEP environment variable.\n"
        << "\n"
+       << "  -v:	increase verbosity\n"
        << "  -h:	help summary\n";
 }
 
@@ -112,9 +113,14 @@ int
 main(int argc, char* argv[]) try
 {
   int arg;
-  while((arg = getopt(argc, argv, "h")) != -1)
+  int verb = 0;
+  while((arg = getopt(argc, argv, "vh")) != -1)
     switch(arg)
     {
+    case 'v':
+      ++verb;
+      break;
+
     case 'h':
       help(argv);
       return EXIT_SUCCESS;
@@ -152,6 +158,8 @@ main(int argc, char* argv[]) try
     int fd;
     char* addr;
     const char* file(argv[optind++]);
+
+    if(verb > 0) cerr << "loading " << file << "...\n";
     char_matrix* tmp(mapCharMatrix(fd, &addr, file, sep));
     if(!tmp->size() || !tmp->front().size())
     {
@@ -194,6 +202,7 @@ main(int argc, char* argv[]) try
     if(m)
     {
       // table merge on the working copy
+      if(verb > 0) cerr << "merging " << file << "...\n";
       try { mergeCharMatrix(*m, cm, km, ki, *tmp, ctmp, ktmp, itmp); }
       catch(const runtime_error& e)
       {	throw runtime_error(sprintf2("%s: %s", file, e.what())); }
