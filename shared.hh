@@ -41,6 +41,10 @@ using std::runtime_error;
 string
 sprintf2(const char* fmt, ...);
 
+vector<string>&
+tokenize(vector<string>& dst, const string& buf,
+    const char* sep = "\t", bool coalesce = false);
+
 class Progress
 {
   long max;
