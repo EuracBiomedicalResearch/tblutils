@@ -34,11 +34,12 @@ void
 help(char* argv[])
 {
   cerr << argv[0] << ": bad parameters:\n"
-       << "Usage: " << argv[0] << " [-h] -f col,col,... file\n"
+       << "Usage: " << argv[0] << " [-hd] -f col,col,... file\n"
        << "tblcut allows to extract single columns by name from the selected CSV file.\n"
        << "CSV files are TAB separated, containing column labels on the first row. You\n"
        << "can change the column separator by setting the TBLSEP environment variable.\n"
        << "\n"
+       << "  -d sep:		set a different column separator\n"
        << "  -f col,col,...:	extract the selected columns (mandatory)\n"
        << "  -h:			help summary\n";
 }
@@ -48,14 +49,19 @@ int
 main(int argc, char* argv[]) try
 {
   vector<string> fields;
+  char sep = 0;
 
   int arg;
-  while((arg = getopt(argc, argv, "hf:")) != -1)
+  while((arg = getopt(argc, argv, "hf:d:")) != -1)
     switch(arg)
     {
     case 'h':
       help(argv);
       return EXIT_SUCCESS;
+
+    case 'd':
+      sep = *optarg;
+      break;
 
     case 'f':
       tokenize(fields, optarg, ",", true);
@@ -75,10 +81,12 @@ main(int argc, char* argv[]) try
   }
 
   // get default separator
-  char sep = '\t';
-  const char *envSep = getenv("TBLSEP");
-  if(envSep && *envSep)
-    sep = *envSep;
+  if(!sep)
+  {
+    const char *envSep = getenv("TBLSEP");
+    if(envSep && *envSep) sep = *envSep;
+    else sep = '\t';
+  }
 
   // open the file
   int fd;
