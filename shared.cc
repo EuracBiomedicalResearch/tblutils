@@ -93,8 +93,8 @@ tokenize(vector<string>& dst, const string& buf,
  * I/O
  */
 
-char_matrix*
-mapCharMatrix(int& fd, char** addr, const char* file, const char sep)
+fix_string_matrix*
+mapFixStringMatrix(int& fd, const char** addr, const char* file, const char sep)
 {
   // open the file
   *addr = NULL;
@@ -106,20 +106,22 @@ mapCharMatrix(int& fd, char** addr, const char* file, const char sep)
   struct stat stBuf;
   fstat(fd, &stBuf);
   size_t addrLen = stBuf.st_size;
-  *addr = (char*)mmap(NULL, addrLen + 1, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  *addr = (const char*)mmap(NULL, addrLen, PROT_READ, MAP_SHARED, fd, 0);
   if(!*addr)
     throw runtime_error(sprintf2("%s: error: cannot map file!", file));
 
   // start reading
-  auto_ptr<char_matrix> m(new char_matrix);
-  vector<const char*> row;
-  char* s = *addr;
-  for(char* p = s; p != (*addr + addrLen); ++p)
+  auto_ptr<fix_string_matrix> m(new fix_string_matrix);
+  vector<fix_string> row;
+  const char* s = *addr;
+  const char* p;
+  for(p = s; p != (*addr + addrLen); ++p)
   {
     if(*p == '\n')
     {
-      *p = 0;
-      row.push_back(s);
+      size_t len = p - s;
+      if(*(p - 1) == '\r') --len;
+      row.push_back(fix_string(s, len));
       s = p + 1;
       m->push_back(row);
       row.clear();
@@ -127,14 +129,9 @@ mapCharMatrix(int& fd, char** addr, const char* file, const char sep)
       if(m->front().size() != m->back().size())
 	throw runtime_error(sprintf2("%s: error: variable number of columns", file));
     }
-    else if(*p == '\r')
-    {
-      *p = 0;
-    }
     else if(*p == sep)
     {
-      *p = 0;
-      row.push_back(s);
+      row.push_back(fix_string(s, p - s));
       s = p + 1;
     }
   }
@@ -142,8 +139,7 @@ mapCharMatrix(int& fd, char** addr, const char* file, const char sep)
   {
     // missing final newline
     cerr << file << ": warning: missing final newline!\n";
-    (*addr)[addrLen] = 0;
-    row.push_back(s);
+    row.push_back(fix_string(s, p - s));
     m->push_back(row);
   }
 

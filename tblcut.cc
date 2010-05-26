@@ -103,8 +103,8 @@ main(int argc, char* argv[]) try
 
   // open the file
   int fd;
-  char* addr;
-  char_matrix& m = *mapCharMatrix(fd, &addr, file, sep);
+  const char* addr;
+  fix_string_matrix& m = *mapFixStringMatrix(fd, &addr, file, sep);
 
   // build the resulting column list
   vector<size_t> cols;
@@ -129,8 +129,8 @@ main(int argc, char* argv[]) try
     col_map cmap;
     for(size_t i = 0; i != m.front().size(); ++i)
     {
-      const char* cname = m.front()[i];
-      if(!cmap.insert(make_pair(string(cname), i)).second)
+      const string cname = m.front()[i];
+      if(!cmap.insert(make_pair(cname, i)).second)
       {
 	cerr << file << ": duplicated column \"" << cname << "\"\n";
 	return EXIT_FAILURE;
@@ -151,7 +151,7 @@ main(int argc, char* argv[]) try
   }
 
   // output
-  for(char_matrix::const_iterator it = m.begin(); it != m.end(); ++it)
+  for(fix_string_matrix::const_iterator it = m.begin(); it != m.end(); ++it)
   {
     vector<size_t>::const_iterator it2 = cols.begin();
     cout << (*it)[*it2];

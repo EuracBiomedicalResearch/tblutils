@@ -142,7 +142,45 @@ public:
 };
 
 
-typedef vector<vector<const char*> > char_matrix;
+class fix_string
+{
+  const char* addr;
+  size_t len;
 
-char_matrix*
-mapCharMatrix(int& fd, char** addr, const char* file, const char sep);
+public:
+  explicit
+  fix_string(const char* addr, const size_t len)
+  : addr(addr), len(len)
+  {}
+
+  operator string() const
+  { return string(addr, len); }
+
+  const char*
+  data() const
+  { return addr; }
+
+  size_t
+  size() const
+  { return len; }
+
+  bool
+  operator !=(const fix_string& r) const
+  {
+    return ((len != r.len) || memcmp(addr, r.addr, len));
+  }
+};
+
+
+inline ostream&
+operator <<(ostream& buf, const fix_string& r)
+{
+  buf.write(r.data(), r.size());
+  return buf;
+}
+
+
+typedef vector<vector<fix_string> > fix_string_matrix;
+
+fix_string_matrix*
+mapFixStringMatrix(int& fd, const char** addr, const char* file, const char sep);

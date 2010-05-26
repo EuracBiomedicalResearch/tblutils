@@ -62,8 +62,8 @@ main(int argc, char* argv[]) try
 
   // open the file
   int fd;
-  char* addr;
-  char_matrix& m = *mapCharMatrix(fd, &addr, file, sep);
+  const char* addr;
+  fix_string_matrix& m = *mapFixStringMatrix(fd, &addr, file, sep);
 
   // start writing back
   for(size_t x = 0; x != m.front().size(); ++x)
