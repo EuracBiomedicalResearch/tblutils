@@ -33,7 +33,6 @@ using std::auto_ptr;
 #include <locale.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <string.h>
 #include <stdio.h>
 
 

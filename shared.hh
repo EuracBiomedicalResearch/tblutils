@@ -31,6 +31,10 @@ using std::string;
 #include <stdexcept>
 using std::runtime_error;
 
+// c system headers
+#include <string.h>
+using std::string;
+
 
 /*
  * Generics

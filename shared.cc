@@ -24,7 +24,6 @@ using std::auto_ptr;
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <string.h>
 
 
 /*

@@ -17,7 +17,6 @@ using std::make_pair;
 
 // c headers
 #include <stdlib.h>
-#include <string.h>
 
 
 /*
