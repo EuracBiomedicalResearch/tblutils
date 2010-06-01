@@ -41,13 +41,15 @@ using std::string;
  */
 
 #define ARRAY_LENGTH(X) (sizeof(X) / sizeof(*X))
+#define foreach(T, I, C) for(T::iterator (I) = (C).begin(); I != (C).end(); ++(I))
+#define foreach_ro(T, I, C) for(T::const_iterator (I) = (C).begin(); I != (C).end(); ++(I))
 
 string
 sprintf2(const char* fmt, ...);
 
 vector<string>&
 tokenize(vector<string>& dst, const string& buf,
-    const char* sep = "\t", bool coalesce = false);
+    const string& sep = "\t", bool coalesce = false);
 
 class Progress
 {

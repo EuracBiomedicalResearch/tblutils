@@ -25,6 +25,7 @@ using std::make_pair;
 
 typedef map<string, size_t> col_map;
 typedef map<string, size_t> key_map;
+typedef vector<size_t> key_col;
 
 
 /*
@@ -37,18 +38,77 @@ help(char* argv[])
   cerr << argv[0] << ": bad parameters:\n"
        << "Usage: " << argv[0] << " [-h] key file1 file2 [file3 ...]\n"
        << "Perform a full join on 'key' of two or more CSV files, performing a\n"
-       << "comparison of common columns. CSV files are TAB separated, containing\n"
-       << "column labels on the first row. You can change the column separator\n"
-       << "by setting the TBLSEP environment variable.\n"
+       << "comparison of common columns. 'key' can be a comma-separated list of\n"
+       << "column names to form unique indexes. CSV files are TAB separated,\n"
+       << "containing column labels on the first row. You can change the column\n"
+       << "separator by setting the TBLSEP environment variable.\n"
        << "\n"
        << "  -v:	increase verbosity\n"
        << "  -h:	help summary\n";
 }
 
 
+string
+buildKey(const key_col& kc, const vector<fix_string>& row)
+{
+  key_col::const_iterator it = kc.begin();
+  string buf(row[*it]);
+  for(++it; it != kc.end(); ++it)
+  {
+    buf += '\0';
+    buf += row[*it];
+  }
+  return buf;
+}
+
+
+string
+unescape(const string& str, const char c = ',')
+{
+  string buf;
+  bool esc = false;
+  foreach_ro(string, p, str)
+  {
+    if(*p == '\\' && !esc)
+    {
+      esc = true;
+      continue;
+    }
+
+    if(*p == c && !esc)
+      buf += '\0';
+    else
+      buf += *p;
+
+    esc = false;
+  }
+  return buf;
+}
+
+
+string
+escape(const string& str, const char c = ',')
+{
+  string buf;
+  foreach_ro(string, it, str)
+  {
+    if(*it == '\0')
+      buf += c;
+    else if(*it != c)
+      buf += *it;
+    else
+    {
+      buf += '\\';
+      buf += c;
+    }
+  }
+  return buf;
+}
+
+
 void
-mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, size_t dstKi,
-    const fix_string_matrix& add, const col_map& addCm, key_map& addKm, size_t addKi)
+mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, const key_col& dstKc,
+    const fix_string_matrix& add, const col_map& addCm, key_map& addKm, const key_col& addKc)
 {
   // preallocate all columns on dst
   vector<size_t> addDstCm;
@@ -67,7 +127,7 @@ mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, size_t d
       addDstCm.push_back(ki);
       dstCm.insert(make_pair(cname, ki));
       dst.front().push_back(*it);
-      for(fix_string_matrix::iterator dIt = dst.begin() + 1; dIt != dst.end(); ++dIt)
+      foreach(fix_string_matrix, dIt, dst)
 	dIt->push_back(fix_string(NULL, 0));
     }
   }
@@ -78,12 +138,12 @@ mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, size_t d
   for(fix_string_matrix::const_iterator it = add.begin() + 1; it != add.end(); ++it)
   {
     // key lookup
-    string kname = (*it)[addKi];
-    key_map::iterator dstKIt = dstKm.find(kname);
+    string key = buildKey(addKc, *it);
+    key_map::iterator dstKIt = dstKm.find(key);
     if(dstKIt == dstKm.end())
     {
       // new row
-      dstKIt = dstKm.insert(make_pair(kname, dst.size())).first;
+      dstKIt = dstKm.insert(make_pair(key, dst.size())).first;
       dst.push_back(vector<fix_string>(dst.front().size(), fix_string(NULL, 0)));
     }
 
@@ -103,7 +163,7 @@ mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, size_t d
 	  string cname = add.front()[addCol];
 	  throw runtime_error(
 	      sprintf2("conflicting contents for column \"%s\", key \"%s\"",
-		  cname.c_str(), kname.c_str()));
+		  cname.c_str(), escape(key).c_str()));
 	}
       }
     }
@@ -145,16 +205,24 @@ main(int argc, char* argv[]) try
   if(envSep && *envSep)
     sep = *envSep;
 
+  // key
+  const char* keyArg(argv[optind++]);
+  vector<string> keys;
+  tokenize(keys, unescape(keyArg), string("\0", 1), true);
+  if(!keys.size())
+  {
+    cerr << argv[0] << ": no key specified!\n";
+    return EXIT_FAILURE;
+  }
+
   // loading stage
   // NOTE: the (mapped) memory is never freed after the merge, due to pointers
   //       to the mmap-ed region being used for the actual storage. This
-  //       results in a very compact memory layout, except when cross-merging
-  //       identical tables (as for comparisons).
-  const char* key(argv[optind++]);
+  //       results in a very compact memory layout.
   fix_string_matrix* m = NULL;
   col_map cm;
   key_map km;
-  size_t ki;
+  key_col kc;
   do
   {
     int fd;
@@ -181,22 +249,26 @@ main(int argc, char* argv[]) try
       }
     }
 
-    col_map::const_iterator keyIt = ctmp.find(key);
-    if(keyIt == ctmp.end())
+    key_col kcTmp;
+    foreach_ro(vector<string>, keyIt, keys)
     {
-      cerr << file << ": cannot find key column \"" << key << "\"\n";
-      return EXIT_FAILURE;
+      col_map::const_iterator ci = ctmp.find(*keyIt);
+      if(ci == ctmp.end())
+      {
+	cerr << file << ": cannot find key column \"" << *keyIt << "\"\n";
+	return EXIT_FAILURE;
+      }
+      kcTmp.push_back(ci->second);
     }
 
     // build the key map
     key_map ktmp;
-    size_t itmp = keyIt->second;
     for(size_t i = 1; i != tmp->size(); ++i)
     {
-      const string kname = (*tmp)[i][itmp];
-      if(!ktmp.insert(make_pair(kname, i)).second)
+      const string key = buildKey(kcTmp, (*tmp)[i]);
+      if(!ktmp.insert(make_pair(key, i)).second)
       {
-	cerr << file << ": duplicated key \"" << kname << "\"\n";
+	cerr << file << ": duplicated key \"" << escape(key) << "\"\n";
 	return EXIT_FAILURE;
       }
     }
@@ -205,7 +277,7 @@ main(int argc, char* argv[]) try
     {
       // table merge on the working copy
       if(verb > 0) cerr << "merging " << file << "...\n";
-      try { mergeCharMatrix(*m, cm, km, ki, *tmp, ctmp, ktmp, itmp); }
+      try { mergeCharMatrix(*m, cm, km, kc, *tmp, ctmp, ktmp, kcTmp); }
       catch(const runtime_error& e)
       {	throw runtime_error(sprintf2("%s: %s", file, e.what())); }
     }
@@ -215,7 +287,7 @@ main(int argc, char* argv[]) try
       m = tmp;
       cm.swap(ctmp);
       km.swap(ktmp);
-      ki = itmp;
+      kc.swap(kcTmp);
     }
   }
   while(argv[optind]);
@@ -226,7 +298,7 @@ main(int argc, char* argv[]) try
   }
 
   // output
-  for(fix_string_matrix::const_iterator it = m->begin(); it != m->end(); ++it)
+  foreach_ro(fix_string_matrix, it, *m)
   {
     vector<fix_string>::const_iterator it2 = it->begin();
     if(it2->size()) cout << *it2;

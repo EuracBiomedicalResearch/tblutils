@@ -60,7 +60,7 @@ sprintf2(const char* fmt, ...)
 
 vector<string>&
 tokenize(vector<string>& dst, const string& buf,
-    const char* sep, bool coalesce)
+    const string& sep, bool coalesce)
 {
   string::size_type s = 0;
   string::size_type e = buf.find_first_of(sep, s);
