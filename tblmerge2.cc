@@ -113,8 +113,7 @@ mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, const ke
   // preallocate all columns on dst
   vector<size_t> addDstCm;
 
-  for(vector<fix_string>::const_iterator it = add.front().begin();
-      it != add.front().end(); ++it)
+  foreach_ro(vector<fix_string>, it, add.front())
   {
     string cname = *it;
     col_map::iterator dIt = dstCm.find(cname);
@@ -127,7 +126,7 @@ mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, const ke
       addDstCm.push_back(ki);
       dstCm.insert(make_pair(cname, ki));
       dst.front().push_back(*it);
-      foreach(fix_string_matrix, dIt, dst)
+      for(fix_string_matrix::iterator dIt = dst.begin() + 1; dIt != dst.end(); ++dIt)
 	dIt->push_back(fix_string(NULL, 0));
     }
   }
