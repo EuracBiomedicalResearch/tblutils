@@ -50,10 +50,8 @@ my $fd;
 
 if($file) {
   open($fd, ">$file") or die("$!\n");
-} else
-{
+} else {
   $fd = \*STDOUT;
-  binmode($fd);
 }
 
 # define shared variables and formats
@@ -90,6 +88,7 @@ sub parse($)
 
   if($cmd eq "ns")
   {
+    $args = substr($args, 0, 31);
     $g::cs = $g::wb->add_worksheet($args);
     $g::cx = $g::cy = $g::cb = 0;
   }
