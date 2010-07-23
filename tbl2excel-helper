@@ -89,6 +89,7 @@ sub parse($)
   if($cmd eq "ns")
   {
     $args = substr($args, 0, 31);
+    $args =~ s/[\[\]:*?\/\\]/_/g;
     $g::cs = $g::wb->add_worksheet($args);
     $g::cx = $g::cy = $g::cb = 0;
   }
