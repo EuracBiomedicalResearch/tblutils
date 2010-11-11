@@ -79,6 +79,7 @@ struct detect_params
   unsigned detectThr;
   set<string> undefStr;
   bool exact;
+  bool relax;
   bool labels;
   bool coalesce;
 };
@@ -238,7 +239,9 @@ loadTxt(named_ifstream& fd, const detect_params& dp)
     // check line
     if(!line.size())
     {
-      cerr << fd.file() << ":" << l << ": warning: empty line\n";
+      const char* error = "empty line";
+      if(!dp.relax) throw namedio_error(fd, l, (string("error: ") + error).c_str());
+      else cerr << fd.file() << ":" << l << ": " << error << "\n";
       continue;
     }
 
@@ -271,7 +274,16 @@ loadTxt(named_ifstream& fd, const detect_params& dp)
 
     if(!cols) cols = row.size();
     else if(cols != row.size())
-      throw namedio_error(fd, l, "error: variable number of columns");
+    {
+      const char* error = "variable number of columns";
+      if(!dp.relax) throw namedio_error(fd, l, (string("error: ") + error).c_str());
+      else cerr << fd.file() << ":" << l << ": " << error << "\n";
+
+      if(row.size() > cols)
+	row.resize(cols);
+      else
+	row.insert(row.end(), cols - row.size(), string());
+    }
 
     // save
     m->push_back(row);
@@ -543,10 +555,11 @@ main(int argc, char* argv[]) try
   dp.detectThr = defaultDetectThr;
   dp.labels = true;
   dp.exact = false;
+  dp.relax = false;
   vector<string> names;
 
   int arg;
-  while((arg = getopt(argc, argv, "t:T:elcd:u:m:n:")) != -1)
+  while((arg = getopt(argc, argv, "t:T:elcd:u:m:n:r")) != -1)
     switch(arg)
     {
     case 't':
@@ -585,6 +598,10 @@ main(int argc, char* argv[]) try
       tokenize(names, optarg, ",");
       break;
 
+    case 'r':
+      dp.relax = !dp.relax;
+      break;
+
     default:
       return EXIT_FAILURE;
     }
@@ -604,6 +621,7 @@ main(int argc, char* argv[]) try
 	 << "  -u str:\tspecify a custom comma-separated list of undefined values\n"
 	 << "  -m thr:\tcolumn type autodetection minimum THReshold (default: " << defaultDetectThr << ")\n"
 	 << "  -n str:\tassign sheet names for each input file\n"
+	 << "  -r:\t\trelax reader (continue reading on formatting errors)\n"
 	 << "\n"
 	 << "TYPE can be integer, double or string\n"
 	 << "default undefined values: \"" << defaultUndefStr << "\"\n";
