@@ -7,7 +7,7 @@ use locale;
 use Getopt::Std;
 
 my %flags;
-getopts("t12L:C:E:vkg:nch", \%flags);
+getopts("t12L:C:E:vkig:nch", \%flags);
 my $SEP = ($ENV{'TBLSEP'} || "\t");
 my ($mergeOn, $file1, $file2) = @ARGV;
 if(!$mergeOn || !$file1 || !$file2 || defined($flags{'h'}))
