@@ -1,0 +1,47 @@
+#!/usr/bin/env perl
+# tblsize: get table size
+# Copyright(c) 2012 EURAC, Institute of Genetic Medicine
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+my %flags;
+getopts("hxyn", \%flags);
+my $SEP = ($ENV{'TBLSEP'} || "\t");
+my ($file) = @ARGV;
+if(!$file || defined($flags{'h'}))
+{
+  print(STDERR qq{$0 file:
+Get table width and height of a CSV file.
+CSV files are TAB separated by default. You can change the column separator
+by setting the TBLSEP environment variable.
+
+  -x:	width only
+  -y:	height only
+  -n:	width and height on different lines
+  -h:	help summary
+});
+  exit(2);
+}
+
+my ($cols, $rows); 
+
+# fetch column count
+my @tmp = split($SEP, <>, -1);
+$cols = @tmp;
+$rows = 1;
+
+# row count
+++$rows while(<>);
+
+# output
+if($flags{'x'}) {
+  print("${cols}\n");
+} elsif($flags{'y'}) {
+  print("${rows}\n");
+} elsif($flags{'n'}) {
+  print("${cols}\n${rows}\n");
+} else {
+  print("${cols}x${rows}\n");
+}
