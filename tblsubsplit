@@ -1,0 +1,193 @@
+#!/usr/bin/perl
+# tblsubsplit: split subcells in a tabular file (uniquely)
+# Copyright(c) 2012 EURAC, Institute of Genetic Medicine
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+my %flags;
+getopts("hHn:l:d:s:u:a", \%flags);
+my $SEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
+my $SUBSEP = $flags{'s'} || ',';
+my ($file) = @ARGV;
+if(!$file || $flags{'h'})
+{
+  print(STDERR qq{$0 {-n N | -l label | -a} [-d delim] [-s delim] [-u label] file:
+Split subcells in a tabular text file using another inner delimiter, producing
+a normalized file with multiple rows (one per each subcell). Optionally,
+produce an unique index column to merge the results back unambiguously.
+
+  -h:		this help
+  -H:		no header/labels (use column numbers instead)
+  -n N[,N]:	split column/s number N
+  -l label[,s]:	split named column/s "label"
+  -d delim:     column delimiter (defaults to the "TBLSEP" env var, or TAB)
+  -s delim:    	subcell delimiter (defaults to ",")
+  -u label:	produce an unique index ID in a column named "label"
+		if -H is used, the "label" itself is ignored
+		(the column is always appended to the table)
+  -a:		split all colums
+
+Tabular text files are TAB separated, containing column labels on the first row.
+You can change the column separator by setting the TBLSEP environment variable.
+});
+  exit(2);
+}
+if($flags{'H'} && defined($flags{'l'})) {
+  die("cannot mix -H with -l");
+}
+if(defined($flags{'n'}) + defined($flags{'l'}) + defined($flags{'a'}) != 1) {
+  die("either -n, -l or -a is required");
+}
+
+
+# line processing functions
+sub getln(*)
+{
+  my ($fd) = @_;
+  $_ = <$fd>;
+  s/[\r\n]+$// if(defined($_));
+  return $_;
+}
+
+sub process($$$)
+{
+  my ($n, $c, $line) = @_;
+
+  # read the line
+  my @cols = split($SEP, $line, -1);
+  if(@cols != $n) {
+    die("line error at $file:$.: variable number of columns");
+  }
+
+  # split subcells for all columns first
+  my @subcols;
+  foreach my $tc(@$c) {
+    push(@subcols, [split($SUBSEP, $cols[$tc], -1)]);
+  }
+
+  # append unique index value
+  if(defined($flags{'u'})) {
+    push(@cols, $. - 1);
+  }
+
+  # iterate over the combinations
+  my @cmb;
+  for(0 .. $#{$c}) {
+    push(@cmb, 0);
+  }
+  for(;;)
+  {
+    # generate the final line
+    for my $tc(0 .. $#{$c}) {
+      $cols[$c->[$tc]] = $subcols[$tc][$cmb[$tc]];
+    }
+    print(join($SEP, @cols) . "\n");
+
+    # next combination
+    my $pos = 0;
+    my $carry = 0;
+    do
+    {
+      if(++$cmb[$pos] <= $#{$subcols[$pos]}) {
+	$carry = 0;
+      }
+      else
+      {
+	$cmb[$pos] = 0;
+	$carry = 1;
+      }
+    }
+    while($carry && ++$pos <= $#cmb);
+    last if($carry);
+  }
+}
+
+sub getuniqueargs($)
+{
+  my %vals;
+  foreach my $v(split(',', shift())) {
+    $vals{$v} = 1
+  }
+  return keys(%vals);
+}
+
+
+# start reading columns/positions
+open(FD, $file) or die("cannot open $file\n");
+
+my @c;
+my $line = getln(FD);
+my @cols = split($SEP, $line, -1);
+my $n = @cols;
+
+if(!$flags{'H'})
+{
+  # columns names are required even for "empty" files.
+  die("unexpected EOF") if(!defined($_));
+}
+
+if($flags{'a'})
+{
+  # assume all columns
+  push(@c, $_) for(0 .. ($n - 1));
+  if(defined($flags{'u'}) && !$flags{'H'}) {
+    push(@cols, $flags{'u'});
+  }
+}
+else
+{
+  # splice arguments
+  my @indexes;
+  if(defined($flags{'n'}))
+  {
+    # ... by number
+    foreach my $tc(getuniqueargs($flags{'n'}))
+    {
+      if($tc < 1 || $tc > $n) {
+	die("bad column index $tc\n");
+      }
+      push(@indexes, $tc - 1);
+    }
+  }
+  else
+  {
+    # ... by label
+    my @labels = getuniqueargs($flags{'l'});
+    for my $i(0 .. $#labels)
+    {
+      my $tc = 0;
+      ++$tc until(($tc >= $n) or ($cols[$tc] eq $labels[$i]));
+      if($tc >= $n) {
+        die("column \"$labels[$i]\" not found in $file\n");
+      }
+      push(@indexes, $tc);
+    }
+  }
+  push(@c, @indexes);
+
+  # unique index label
+  if(defined($flags{'u'})) {
+    push(@cols, $flags{'u'});
+  }
+}
+
+if(!$flags{'H'})
+{
+  # output header
+  print(join($SEP, @cols) . "\n");
+
+  # read the next line
+  $line = getln(FD);
+}
+undef(@cols);
+
+# process the file
+while(defined($line))
+{
+  process($n, \@c, $line);
+  $line = getln(FD);
+}
+
+close(FD);
