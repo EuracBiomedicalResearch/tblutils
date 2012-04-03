@@ -31,6 +31,7 @@ cleaned file that can be easily parsed by most unix text tools.
   -Q quot:    	output cell quoting delimiter (by default suppress quoting)
   -E esc:	output escape character (by default suppress escaping)
   -c chars:    	remove chars from cells (defaults to "\\n\\r\"'\\t\\\\")
+
 });
   exit(2);
 }
