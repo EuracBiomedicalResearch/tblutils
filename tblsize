@@ -29,7 +29,7 @@ my ($cols, $rows);
 
 # fetch column count
 my @tmp = split($SEP, <>, -1);
-$cols = @tmp;
+$cols = @tmp || 1;
 $rows = 1;
 
 # row count

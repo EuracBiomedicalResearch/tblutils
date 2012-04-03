@@ -29,7 +29,7 @@ my @res;
 while(<FD>)
 {
   s/[\r\n]+$//;
-  my @cols = split($SEP, $_, -1);
+  my @cols = (!length($_)? (""): split($SEP, $_, -1));
 
   foreach(0 .. $#cols)
   {

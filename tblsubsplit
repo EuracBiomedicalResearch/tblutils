@@ -51,12 +51,18 @@ sub getln(*)
   return $_;
 }
 
+sub splitnz($$)
+{
+  my ($sep, $str) = @_;
+  return (!length($str)? (""): split($sep, $str, -1));
+}
+
 sub process($$$)
 {
   my ($n, $c, $line) = @_;
 
   # read the line
-  my @cols = split($SEP, $line, -1);
+  my @cols = splitnz($SEP, $line);
   if(@cols != $n) {
     die("line error at $file:$.: variable number of columns");
   }
@@ -64,7 +70,7 @@ sub process($$$)
   # split subcells for all columns first
   my @subcols;
   foreach my $tc(@$c) {
-    push(@subcols, [split($SUBSEP, $cols[$tc], -1)]);
+    push(@subcols, [splitnz($SUBSEP, $cols[$tc])]);
   }
 
   # append unique index value
@@ -119,7 +125,7 @@ open(FD, $file) or die("cannot open $file\n");
 
 my @c;
 my $line = getln(FD);
-my @cols = split($SEP, $line, -1);
+my @cols = splitnz($SEP, $line);
 my $n = @cols;
 
 if(!$flags{'H'})
