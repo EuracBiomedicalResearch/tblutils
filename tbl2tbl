@@ -1,0 +1,55 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+use Text::CSV_XS;
+
+# arguments
+my %flags;
+getopts("hd:q:e:D:Q:E:c:", \%flags);
+my $ISEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
+my $OSEP = ($flags{'D'} || "\t");
+my $IQUOT = ($flags{'q'} || '"');
+my $OQUOT = ($flags{'Q'} || undef);
+my $IESC = ($flags{'e'} || '"');
+my $OESC = ($flags{'E'} || undef);
+my $CHARS = ($flags{'c'} || "\n\r\"'\t\\");
+my ($file) = @ARGV;
+if(!$file || $flags{'h'})
+{
+  print(STDERR qq{$0 [options] file:
+Parse any tabular text file (csv, tab delimited, excel exported text files) and
+output the result back as a simple non-quoted, non-escaped, TAB-separated and
+cleaned file that can be easily parsed by most unix text tools.
+
+  -h:		this help
+  -d delim:     input column delimiter (defaults to the "TBLSEP" env var, or TAB)
+  -q quot:    	input cell quoting delimiter (defaults to '"', use '' to suppress)
+  -e esc:	input escape character (defaults to '"', use '' to suppress escaping)
+  -D delim:     output column delimiter (defaults to TAB)
+  -Q quot:    	output cell quoting delimiter (by default suppress quoting)
+  -E esc:	output escape character (by default suppress escaping)
+  -c chars:    	remove chars from cells (defaults to "\\n\\r\"'\\t\\\\")
+});
+  exit(2);
+}
+
+# processing
+my $icsv = Text::CSV_XS->new({ binary => 1, auto_diag => 2,
+    sep_char => $ISEP, quote_char => $IQUOT, escape_char => $IESC });
+my $ocsv = Text::CSV_XS->new({ binary => 1,
+    sep_char => $OSEP, quote_char => $OQUOT, escape_char => $OESC });
+open(my $ifd, "<", $file) or die("cannot open input file: $!");
+while(my $row = $icsv->getline($ifd))
+{
+  for my $c(@$row)
+  {
+    # cleanup
+    $c =~ s/[\Q$CHARS\E]//g;
+  }
+
+  $ocsv->print(\*STDOUT, $row);
+  print("\n");
+}
+close($ifd);
