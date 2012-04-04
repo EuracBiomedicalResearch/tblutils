@@ -7,7 +7,7 @@ use Text::CSV_XS;
 
 # arguments
 my %flags;
-getopts("hd:q:e:D:Q:E:c:rRs", \%flags);
+getopts("hHd:q:e:D:Q:E:c:rRs", \%flags);
 my $ISEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
 my $OSEP = ($flags{'D'} || "\t");
 my $IQUOT = ($flags{'q'} || '"');
@@ -24,6 +24,7 @@ output the result back as a simple non-quoted, non-escaped, TAB-separated and
 cleaned file that can be easily parsed by most unix text tools.
 
   -h:		this help
+  -H:		no header/labels
   -d delim:     input column delimiter (defaults to the "TBLSEP" env var, or TAB)
   -q quot:    	input cell quoting delimiter (defaults to '"', use '' to suppress)
   -e esc:	input escape character (defaults to '"', use '' to suppress escaping)
@@ -52,7 +53,7 @@ my @out;
 my @colUsage;
 
 # reading
-while(my $row = $icsv->getline($ifd))
+for(my $ln = 0; my $row = $icsv->getline($ifd); ++$ln)
 {
   my $any = 0;
   for my $c(@$row)
@@ -72,7 +73,7 @@ while(my $row = $icsv->getline($ifd))
     else
     {
       push(@colUsage, 0) while(@colUsage < @$row);
-      if($flags{'R'})
+      if($flags{'R'} && ($ln || !$flags{'H'}))
       {
 	for my $n(0 .. $#{$row}) {
 	  $colUsage[$n] = 1 if(length($row->[$n]));
