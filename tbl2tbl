@@ -7,7 +7,7 @@ use Text::CSV_XS;
 
 # arguments
 my %flags;
-getopts("hd:q:e:D:Q:E:c:", \%flags);
+getopts("hd:q:e:D:Q:E:c:r", \%flags);
 my $ISEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
 my $OSEP = ($flags{'D'} || "\t");
 my $IQUOT = ($flags{'q'} || '"');
@@ -31,6 +31,7 @@ cleaned file that can be easily parsed by most unix text tools.
   -Q quot:    	output cell quoting delimiter (by default suppress quoting)
   -E esc:	output escape character (by default suppress escaping)
   -c chars:    	remove chars from cells (defaults to "\\n\\r\"'\\t\\\\")
+  -r:		remove empty rows/spourious lines
 
 });
   exit(2);
@@ -44,13 +45,18 @@ my $ocsv = Text::CSV_XS->new({ binary => 1,
 open(my $ifd, "<", $file) or die("cannot open input file: $!");
 while(my $row = $icsv->getline($ifd))
 {
+  my $any = 0;
   for my $c(@$row)
   {
     # cleanup
     $c =~ s/[\Q$CHARS\E]//g;
+    $any = 1 if(!$any && length($c));
   }
 
-  $ocsv->print(\*STDOUT, $row);
-  print("\n");
+  if($any || !$flags{'r'})
+  {
+    $ocsv->print(\*STDOUT, $row);
+    print("\n");
+  }
 }
 close($ifd);
