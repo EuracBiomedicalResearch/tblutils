@@ -91,7 +91,7 @@ if($flags{'s'})
 {
   # rectify
   foreach my $row(@out) {
-    push($row, "") while(@$row < @colUsage);
+    push(@$row, "") while(@$row < @colUsage);
   }
 }
 
@@ -102,7 +102,7 @@ if($flags{'R'})
   {
     my $tmp = [];
     for my $n(0 .. $#{$row}) {
-      push($tmp, $row->[$n]) if($colUsage[$n]);
+      push(@$tmp, $row->[$n]) if($colUsage[$n]);
     }
     $row = $tmp;
   }
