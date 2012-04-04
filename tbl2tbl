@@ -7,7 +7,7 @@ use Text::CSV_XS;
 
 # arguments
 my %flags;
-getopts("hd:q:e:D:Q:E:c:r", \%flags);
+getopts("hd:q:e:D:Q:E:c:rRs", \%flags);
 my $ISEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
 my $OSEP = ($flags{'D'} || "\t");
 my $IQUOT = ($flags{'q'} || '"');
@@ -32,7 +32,10 @@ cleaned file that can be easily parsed by most unix text tools.
   -E esc:	output escape character (by default suppress escaping)
   -c chars:    	remove chars from cells (defaults to "\\n\\r\"'\\t\\\\")
   -r:		remove empty rows/spourious lines
+  -R:		remove empty columns [1]
+  -s:		squarify the input table (pad short rows with empty columns) [1]
 
+[1] These options require reading the entire file into memory to operate.
 });
   exit(2);
 }
@@ -43,6 +46,12 @@ my $icsv = Text::CSV_XS->new({ binary => 1, auto_diag => 2,
 my $ocsv = Text::CSV_XS->new({ binary => 1,
     sep_char => $OSEP, quote_char => $OQUOT, escape_char => $OESC });
 open(my $ifd, "<", $file) or die("cannot open input file: $!");
+
+my $direct = !$flags{'R'} && !$flags{'s'};
+my @out;
+my @colUsage;
+
+# reading
 while(my $row = $icsv->getline($ifd))
 {
   my $any = 0;
@@ -55,8 +64,51 @@ while(my $row = $icsv->getline($ifd))
 
   if($any || !$flags{'r'})
   {
-    $ocsv->print(\*STDOUT, $row);
-    print("\n");
+    if($direct)
+    {
+      $ocsv->print(\*STDOUT, $row);
+      print("\n");
+    }
+    else
+    {
+      push(@colUsage, 0) while(@colUsage < @$row);
+      if($flags{'R'})
+      {
+	for my $n(0 .. $#{$row}) {
+	  $colUsage[$n] = 1 if(length($row->[$n]));
+	}
+      }
+      push(@out, $row);
+    }
   }
 }
 close($ifd);
+exit(0) if($direct);
+
+# post-processing
+if($flags{'s'})
+{
+  # squarify
+  foreach my $row(@out) {
+    push($row, "") while(@$row < @colUsage);
+  }
+}
+
+if($flags{'R'})
+{
+  # remove empty columns
+  foreach my $row(@out)
+  {
+    my $tmp = [];
+    for my $n(0 .. $#{$row}) {
+      push($tmp, $row->[$n]) if($colUsage[$n]);
+    }
+    $row = $tmp;
+  }
+}
+
+# post-processed output
+foreach my $row(@out) {
+  $ocsv->print(\*STDOUT, $row);
+  print("\n");
+}
