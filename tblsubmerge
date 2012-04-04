@@ -138,7 +138,7 @@ for my $idx(keys(%data))
   for my $tc(0 .. $n - 1)
   {
     next if($tc == $c);
-    push(@row, join($SUBSEP, keys($data{$idx}[$tc])));
+    push(@row, join($SUBSEP, keys(%{$data{$idx}[$tc]})));
   }
   print(join($SEP, @row) . "\n");
 }
