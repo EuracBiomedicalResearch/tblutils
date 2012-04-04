@@ -34,7 +34,7 @@ cleaned file that can be easily parsed by most unix text tools.
   -c chars:    	remove chars from cells (defaults to "\\n\\r\"'\\t\\\\")
   -r:		remove empty rows/spourious lines
   -R:		remove empty columns [1]
-  -s:		squarify the input table (pad short rows with empty columns) [1]
+  -s:		rectify the input table (pad short rows with empty columns) [1]
 
 [1] These options require reading the entire file into memory to operate.
 });
@@ -89,7 +89,7 @@ exit(0) if($direct);
 # post-processing
 if($flags{'s'})
 {
-  # squarify
+  # rectify
   foreach my $row(@out) {
     push($row, "") while(@$row < @colUsage);
   }
