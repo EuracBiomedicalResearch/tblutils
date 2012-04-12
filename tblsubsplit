@@ -7,7 +7,7 @@ use locale;
 use Getopt::Std;
 
 my %flags;
-getopts("hHn:l:d:s:u:a", \%flags);
+getopts("hHn:l:d:s:u:aw", \%flags);
 my $SEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
 my $SUBSEP = $flags{'s'} || ',';
 my ($file) = @ARGV;
@@ -28,6 +28,7 @@ produce an unique index column to merge the results back unambiguously.
 		if -H is used, the "label" itself is ignored
 		(the column is always appended to the table)
   -a:		split all colums
+  -w:		strip leading and trailing whitespace from cells
 
 Tabular text files are TAB separated, containing column labels on the first row.
 You can change the column separator by setting the TBLSEP environment variable.
@@ -51,6 +52,13 @@ sub getln(*)
   return $_;
 }
 
+sub trim($)
+{
+  s/^\s*//;
+  s/\s*$//;
+  return $_;
+}
+
 sub splitnz($$)
 {
   my ($sep, $str) = @_;
@@ -70,7 +78,9 @@ sub process($$$)
   # split subcells for all columns first
   my @subcols;
   foreach my $tc(@$c) {
-    push(@subcols, [splitnz($SUBSEP, $cols[$tc])]);
+    my @sc = splitnz($SUBSEP, $cols[$tc]);
+    map(&trim, @sc) if($flags{'w'});
+    push(@subcols, [@sc]);
   }
 
   # append unique index value

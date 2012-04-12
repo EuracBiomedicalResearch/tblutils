@@ -7,7 +7,7 @@ use Text::CSV_XS;
 
 # arguments
 my %flags;
-getopts("hHd:q:e:D:Q:E:c:rRs", \%flags);
+getopts("hHd:q:e:D:Q:E:c:rRsw", \%flags);
 my $ISEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
 my $OSEP = ($flags{'D'} || "\t");
 my $IQUOT = ($flags{'q'} || '"');
@@ -35,6 +35,7 @@ cleaned file that can be easily parsed by most unix text tools.
   -r:		remove empty rows/spourious lines
   -R:		remove empty columns [1]
   -s:		rectify the input table (pad short rows with empty columns) [1]
+  -w:		strip leading and trailing whitespace from cells
 
 [1] These options require reading the entire file into memory to operate.
 });
@@ -60,6 +61,11 @@ for(my $ln = 0; my $row = $icsv->getline($ifd); ++$ln)
   {
     # cleanup
     $c =~ s/[\Q$CHARS\E]//g;
+    if($flags{'w'})
+    {
+      $c =~ s/^\s*//g;
+      $c =~ s/\s*$//g;
+    }
     $any = 1 if(!$any && length($c));
   }
 
