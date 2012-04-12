@@ -109,7 +109,8 @@ if($flags{'R'})
 }
 
 # post-processed output
-foreach my $row(@out) {
+foreach my $row(@out)
+{
   $ocsv->print(\*STDOUT, $row);
   print("\n");
 }
