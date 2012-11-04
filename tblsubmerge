@@ -47,7 +47,7 @@ sub getln(*)
 sub splitnz($$)
 {
   my ($sep, $str) = @_;
-  return (!length($str)? (""): split($sep, $str, -1));
+  return (!length($str)? (""): split(/\Q$sep\E/, $str, -1));
 }
 
 sub process($$$\%)
