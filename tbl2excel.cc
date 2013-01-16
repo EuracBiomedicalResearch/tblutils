@@ -569,9 +569,10 @@ main(int argc, char* argv[]) try
   dp.relax = false;
   dp.x97mode = true;
   vector<string> names;
+  bool help = false;
 
   int arg;
-  while((arg = getopt(argc, argv, "t:T:elcd:u:m:n:rx")) != -1)
+  while((arg = getopt(argc, argv, "t:T:elcd:u:m:n:rxh")) != -1)
     switch(arg)
     {
     case 't':
@@ -618,16 +619,20 @@ main(int argc, char* argv[]) try
       dp.x97mode = !dp.x97mode;
       break;
 
+    case 'h':
+      help = true;
+      break;
+
     default:
       return EXIT_FAILURE;
     }
 
   // check args
   argc -= optind;
-  if(argc < 1)
+  if(help || argc < 1)
   {
-    cerr << argv[0] << ": bad parameters:\n"
-	 << "Usage: " << argv[0] << " [-tTelcdumn] input [input ...]\n\n"
+    if(!help) cerr << argv[0] << ": bad parameters:\n";
+    cerr << "Usage: " << argv[0] << " [-tTelcdumn] input [input ...]\n\n"
 	 << "  -t type:\tuse TYPE type for all columns, do not autodetect\n"
 	 << "  -T col:type\tuse TYPE for the specified COLumn\n"
 	 << "  -e:\t\tensure EXACTness of all types/floating point conversions\n"
@@ -639,10 +644,11 @@ main(int argc, char* argv[]) try
 	 << "  -n str:\tassign sheet names for each input file\n"
 	 << "  -r:\t\trelax reader (continue reading on formatting errors)\n"
 	 << "  -x:\t\twrite XLSX (Excel 2012+) files instead of XLS (Excel 97-2003)\n"
+	 << "  -h:\t\tthis help\n"
 	 << "\n"
 	 << "TYPE can be integer, double or string\n"
 	 << "default undefined values: \"" << defaultUndefStr << "\"\n";
-    return EXIT_FAILURE;
+    return (help? EXIT_SUCCESS: EXIT_FAILURE);
   }
 
   // defaults
