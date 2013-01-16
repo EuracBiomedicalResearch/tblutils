@@ -20,6 +20,7 @@ using std::find;
 
 // c headers
 #include <stdlib.h>
+#include <unistd.h>
 
 
 /*
