@@ -1,0 +1,122 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+use Text::CSV_XS;
+
+# arguments
+my %flags;
+getopts("hHd:q:e:D:Q:E:c:rRsw", \%flags);
+my $ISEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
+my $OSEP = ($flags{'D'} || "\t");
+my $IQUOT = ($flags{'q'} || '"');
+my $OQUOT = ($flags{'Q'} || undef);
+my $IESC = ($flags{'e'} || '"');
+my $OESC = ($flags{'E'} || undef);
+my $CHARS = ($flags{'c'} || "\n\r\"'\t\\");
+my ($file) = @ARGV;
+if(!$file || $flags{'h'})
+{
+  print(STDERR qq{$0 [options] file:
+Parse any tabular text file (csv, tab delimited, excel exported text files) and
+output the result back as a simple non-quoted, non-escaped, TAB-separated and
+cleaned file that can be easily parsed by most unix text tools.
+
+  -h:		this help
+  -H:		no header/labels
+  -d delim:     input column delimiter (defaults to the "TBLSEP" env var, or TAB)
+  -q quot:    	input cell quoting delimiter (defaults to '"', use '' to suppress)
+  -e esc:	input escape character (defaults to '"', use '' to suppress escaping)
+  -D delim:     output column delimiter (defaults to TAB)
+  -Q quot:    	output cell quoting delimiter (by default suppress quoting)
+  -E esc:	output escape character (by default suppress escaping)
+  -c chars:    	remove chars from cells (defaults to "\\n\\r\"'\\t\\\\")
+  -r:		remove empty rows/spourious lines
+  -R:		remove empty columns [1]
+  -s:		rectify the input table (pad short rows with empty columns) [1]
+  -w:		strip leading and trailing whitespace from cells
+
+[1] These options require reading the entire file into memory to operate.
+});
+  exit(2);
+}
+
+# processing
+my $icsv = Text::CSV_XS->new({ binary => 1, auto_diag => 2,
+    sep_char => $ISEP, quote_char => $IQUOT, escape_char => $IESC });
+my $ocsv = Text::CSV_XS->new({ binary => 1,
+    sep_char => $OSEP, quote_char => $OQUOT, escape_char => $OESC });
+open(my $ifd, "<", $file) or die("cannot open input file: $!");
+
+my $direct = !$flags{'R'} && !$flags{'s'};
+my @out;
+my @colUsage;
+
+# reading
+for(my $ln = 0; my $row = $icsv->getline($ifd); ++$ln)
+{
+  my $any = 0;
+  for my $c(@$row)
+  {
+    # cleanup
+    $c =~ s/[\Q$CHARS\E]//g;
+    if($flags{'w'})
+    {
+      $c =~ s/^\s*//g;
+      $c =~ s/\s*$//g;
+    }
+    $any = 1 if(!$any && length($c));
+  }
+
+  if($any || !$flags{'r'})
+  {
+    if($direct)
+    {
+      $ocsv->print(\*STDOUT, $row);
+      print("\n");
+    }
+    else
+    {
+      push(@colUsage, 0) while(@colUsage < @$row);
+      if($flags{'R'} && ($ln || !$flags{'H'}))
+      {
+	for my $n(0 .. $#{$row}) {
+	  $colUsage[$n] = 1 if(length($row->[$n]));
+	}
+      }
+      push(@out, $row);
+    }
+  }
+}
+close($ifd);
+exit(0) if($direct);
+
+# post-processing
+if($flags{'s'})
+{
+  # rectify
+  foreach my $row(@out) {
+    push(@$row, "") while(@$row < @colUsage);
+  }
+}
+
+if($flags{'R'})
+{
+  # remove empty columns
+  foreach my $row(@out)
+  {
+    my $tmp = [];
+    for my $n(0 .. $#{$row}) {
+      push(@$tmp, $row->[$n]) if($colUsage[$n]);
+    }
+    $row = $tmp;
+  }
+}
+
+# post-processed output
+foreach my $row(@out)
+{
+  $ocsv->print(\*STDOUT, $row);
+  print("\n");
+}

@@ -1,0 +1,146 @@
+#!/usr/bin/perl
+# tblsubmerge: merge subcells in a tabular file (uniquely)
+# Copyright(c) 2012 EURAC, Institute of Genetic Medicine
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+my %flags;
+getopts("hHd:s:u:", \%flags);
+my $SEP = ($flags{'d'} || $ENV{'TBLSEP'} || "\t");
+my $SUBSEP = $flags{'s'} || ',';
+my ($file) = @ARGV;
+if(!$file || $flags{'h'})
+{
+  print(STDERR qq{$0 [-d delim] [-s delim] {-u label/N} file:
+Merge the cells from different rows of a tabular text file having the same
+index, producing a single row where the multiple (unique) values are
+concatenated with the specified delimiter into a single cell.
+
+  -h:		this help
+  -H:		no header/labels (use column numbers instead)
+  -d delim:     column delimiter (defaults to the "TBLSEP" env var, or TAB)
+  -s delim:    	subcell delimiter (defaults to ",")
+  -u label/N:	use an unique index in a column named "label"
+		if -H is used, a column number is expected instead
+
+Tabular text files are TAB separated, containing column labels on the first row.
+You can change the column separator by setting the TBLSEP environment variable.
+});
+  exit(2);
+}
+if(!defined($flags{'u'})) {
+  die("a column label/N containing an index column (-u) is required");
+}
+
+
+# line processing functions
+sub getln(*)
+{
+  my ($fd) = @_;
+  $_ = <$fd>;
+  s/[\r\n]+$// if(defined($_));
+  return $_;
+}
+
+sub splitnz($$)
+{
+  my ($sep, $str) = @_;
+  return (!length($str)? (""): split(/\Q$sep\E/, $str, -1));
+}
+
+sub process($$$\%)
+{
+  my ($n, $c, $line, $data) = @_;
+
+  # read the line
+  my @cols = splitnz($SEP, $line);
+  if(@cols != $n) {
+    die("line error at $file:$.: variable number of columns");
+  }
+
+  # fetch the current index
+  my $idx = $cols[$c];
+  $idx = "$SEP$n" if(!length($idx));
+
+  # process all columns except the index
+  for my $tc(0 .. $#cols)
+  {
+    next if($tc == $c);
+    $data->{$idx}[$tc]{$cols[$tc]} = 1;
+  }
+}
+
+
+# start reading columns/positions
+open(FD, $file) or die("cannot open $file\n");
+
+my $c;
+my $line = getln(FD);
+my @cols = splitnz($SEP, $line);
+my $n = @cols;
+
+if(!$flags{'H'})
+{
+  # columns names are required even for "empty" files.
+  die("unexpected EOF") if(!defined($_));
+}
+
+# fetch column index
+if($flags{'H'})
+{
+  # ... by number
+  $c = $flags{'u'};
+  if($c < 1 || $c > $n) {
+    die("bad column index $c\n");
+  }
+  $c -= 1;
+}
+else
+{
+  # ... by label
+  $c = 0;
+  ++$c until(($c >= $n) or ($cols[$c] eq $flags{'u'}));
+  if($c >= $n) {
+    die("column \"$flags{'u'}\" not found in $file\n");
+  }
+}
+
+# remove the index itself from the output
+splice(@cols, $c, 1);
+if(!@cols) {
+  die("not enough columns to perform subcolumn merge");
+}
+
+if(!$flags{'H'})
+{
+  # output header
+  print(join($SEP, @cols) . "\n");
+
+  # read the next line
+  $line = getln(FD);
+}
+undef(@cols);
+
+# process the file
+my %data;
+while(defined($line))
+{
+  process($n, $c, $line, %data);
+  $line = getln(FD);
+}
+
+# output
+for my $idx(keys(%data))
+{
+  my @row;
+  for my $tc(0 .. $n - 1)
+  {
+    next if($tc == $c);
+    push(@row, join($SUBSEP, keys(%{$data{$idx}[$tc]})));
+  }
+  print(join($SEP, @row) . "\n");
+}
+
+close(FD);
