@@ -40,10 +40,13 @@ using std::auto_ptr;
  * Internal constants and types
  */
 
+// excel writer
+const char x97HelperCmd[] = "tbl2excel-helper";
+const size_t x97RowLimit = 65535;
+const size_t x97ColLimit = 255;
+const char helperCmd[] = "tbl2excel-helper -x";
+
 // detection constants
-const char helperCmd[] = "tbl2excel-helper";
-const size_t rowLimit = 65535;
-const size_t colLimit = 255;
 const int defaultDetectThr = 99;
 const int detectLines = 3;
 const char fallbackEnv[] = "TBLSEP";
@@ -82,6 +85,7 @@ struct detect_params
   bool relax;
   bool labels;
   bool coalesce;
+  bool x97mode;
 };
 
 
@@ -485,7 +489,7 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
   fprintf(fd, "ns %s\n", sheetName.c_str());
 
   // write a warning on the sheet if the conversion will overflow the Excel limits
-  if(md.colTypes.size() > colLimit || md.m->size() > rowLimit)
+  if(dp.x97mode && (md.colTypes.size() > x97ColLimit || md.m->size() > x97RowLimit))
   {
     fprintf(fd, "b a s WARNING: output truncated due to Excel row/column limits!\nnr\n");
     cerr << sheetName << ": warning: output truncated due to Excel row/column limits!\n";
@@ -501,8 +505,14 @@ output(FILE* fd, const string& sheetName, const matrix_data& md, const detect_pa
   }
 
   // start writing the sheet
-  size_t rows = min<size_t>(md.m->end() - md.m->begin() - md.labels, rowLimit);
-  size_t cols = min<size_t>(md.colTypes.size(), colLimit);
+  size_t rows = md.m->end() - md.m->begin() - md.labels;
+  size_t cols = md.colTypes.size();
+  if(dp.x97mode)
+  {
+    rows = min<size_t>(rows, x97RowLimit - 1);
+    cols = min<size_t>(cols, x97ColLimit);
+  }
+
   size_t steps = max<size_t>(1, rows / 100);
   Progress progress(rows, "rows");
 
@@ -556,10 +566,11 @@ main(int argc, char* argv[]) try
   dp.labels = true;
   dp.exact = false;
   dp.relax = false;
+  dp.x97mode = true;
   vector<string> names;
 
   int arg;
-  while((arg = getopt(argc, argv, "t:T:elcd:u:m:n:r")) != -1)
+  while((arg = getopt(argc, argv, "t:T:elcd:u:m:n:rx")) != -1)
     switch(arg)
     {
     case 't':
@@ -602,6 +613,10 @@ main(int argc, char* argv[]) try
       dp.relax = !dp.relax;
       break;
 
+    case 'x':
+      dp.x97mode = !dp.x97mode;
+      break;
+
     default:
       return EXIT_FAILURE;
     }
@@ -622,6 +637,7 @@ main(int argc, char* argv[]) try
 	 << "  -m thr:\tcolumn type autodetection minimum THReshold (default: " << defaultDetectThr << ")\n"
 	 << "  -n str:\tassign sheet names for each input file\n"
 	 << "  -r:\t\trelax reader (continue reading on formatting errors)\n"
+	 << "  -x:\t\twrite XLSX (Excel 2012+) files instead of XLS (Excel 97-2003)\n"
 	 << "\n"
 	 << "TYPE can be integer, double or string\n"
 	 << "default undefined values: \"" << defaultUndefStr << "\"\n";
@@ -633,7 +649,8 @@ main(int argc, char* argv[]) try
   if(!dp.undefStr.size()) uniqueTokens(dp.undefStr, defaultUndefStr);
 
   // open comm with helper
-  FILE* comm = popen(helperCmd, "w");
+  const char* cmd = dp.x97mode? x97HelperCmd: helperCmd;
+  FILE* comm = popen(cmd, "w");
   if(!comm) throw("popen failed");
 
   const char* inFile;
@@ -681,7 +698,7 @@ main(int argc, char* argv[]) try
 
   if(pclose(comm))
   {
-    cerr << argv[0] << ": error: " << helperCmd << " failed\n";
+    cerr << argv[0] << ": error: " << cmd << " failed\n";
     return EXIT_FAILURE;
   }
 

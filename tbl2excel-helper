@@ -6,15 +6,14 @@ use strict;
 use locale;
 use POSIX qw{locale_h};
 use Getopt::Std;
-use Spreadsheet::WriteExcel;
 
 # flags and arguments
 my %flags;
-getopts("h", \%flags);
+getopts("hx", \%flags);
 my ($file) = @ARGV;
 if(defined($flags{'h'}))
 {
-  print(STDERR qq{$0 [-h] [file]:
+  print(STDERR qq{$0 [-hx] [file]:
 Write an Excel file to standard output (or into the specified file), using
 simple one-line commands:
 
@@ -41,24 +40,32 @@ Examples:
 The following flags are supported:
 
   -h:	this help
+  -x:	write XLSX (Excel 2012+) files instead of XLS (Excel 97-2003)
 });
   exit(2);
 }
 
 # output file
 my $fd;
-
 if($file) {
   open($fd, ">$file") or die("$!\n");
 } else {
   $fd = \*STDOUT;
 }
+binmode($fd);
+
+# excel writer
+local $g::wb;
+if($flags{'x'}) {
+  use Excel::Writer::XLSX;
+  $g::wb = Excel::Writer::XLSX->new($fd);
+} else {
+  use Spreadsheet::WriteExcel;
+  $g::wb = Spreadsheet::WriteExcel->new($fd);
+}
 
 # define shared variables and formats
 my $thousandsSep = localeconv()->{'thousands_sep'} || ',';
-binmode($fd);
-local $g::wb = Spreadsheet::WriteExcel->new($fd);
-
 local $g::f_bold = $g::wb->add_format(bold => 1);
 local $g::f_double = $g::wb->add_format(num_format => "0.000000");
 local $g::f_bold_double = $g::wb->add_format(bold => 1, num_format => "0.000000");
@@ -76,6 +83,11 @@ sub at($$)
   $g::cx = $x;
   return @_;
 }
+
+sub req_cs()
+{
+  die("undefined worksheet") unless(defined($g::cs));
+};
 
 # command handlers
 sub parse($);
@@ -114,22 +126,26 @@ sub parse($)
   {
     my ($y, $x, $n) = ($args =~ /^(\d+) (\d+) (.*)/);
     $n =~ s/\Q$thousandsSep\E//g;
+    req_cs();
     $g::cs->write_number(at($y, $x), $n, ($g::cb? $g::f_bold: undef));
   }
   elsif($cmd eq "d")
   {
     my ($y, $x, $n) = ($args =~ /^(\d+) (\d+) (.*)/);
     $n =~ s/\Q$thousandsSep\E//g;
+    req_cs();
     $g::cs->write_number(at($y, $x), $n, ($g::cb? $g::f_bold_double: $g::f_double));
   }
   elsif($cmd eq "s")
   {
     my ($y, $x, $s) = ($args =~ /^(\d+) (\d+) (.*)/);
+    req_cs();
     $g::cs->write_string(at($y, $x), $s, ($g::cb? $g::f_bold: undef));
   }
   elsif($cmd eq "f")
   {
     my ($y, $x, $f) = ($args =~ /^(\d+) (\d+) (.*)/);
+    req_cs();
     $g::cs->write_formula(at($y, $x), "=$f", ($g::cb? $g::f_bold: undef));
   }
 
@@ -154,3 +170,4 @@ while(<STDIN>)
   chomp;
   parse($_);
 }
+$g::wb->close();
