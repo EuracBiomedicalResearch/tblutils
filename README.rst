@@ -7,13 +7,24 @@ tblutils: Text-based Table utilities
 :tblcsort: Sort the columns of a CSV file
 :tblcut: Extract columns from CSV files by name
 :tblfilter: Filter rows of a CSV file easily
-:tblmerge2: Merge two CSV tables together (faster/simplified alternative that
-	    can work on larger files)
 :tblmerge: Merge/compare two CSV tables together
+:tblmerge2: Merge two CSV tables together (faster/simplified alternative that
+	    can work on larger files, C implementation)
 :tblnorm: Normalize (reorder) a CSV table
 :tblsize: Get table width and height of a CSV file.
-:tbltransp/tbltransp2: Transpose a CSV table
+:tbltransp: Transpose a CSV table
+:tbltransp2: Transpose a CSV table (C implementation)
 :tblunlabelize: Remove labels from a CSV file
+
+
+Installation
+------------
+
+After unpacking the sources, type::
+
+  make install
+
+to install all the utilities to ``/usr/local/bin``.
 
 
 Input format convention
