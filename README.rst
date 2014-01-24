@@ -35,6 +35,7 @@ Toolset
 :tblsize: Get a tabular text file width (column) and height (row count).
 :tbltransp: Transpose a tabular text file (flip columns/rows).
 :tbltransp2: Transpose a tabular text file (faster C implementation).
+:tbltomatrix: Write a matrix using a three-column associative table.
 :tbl2tbl: Convert CSV files to simple tabular, tab-separated text files (TSV)
           and back, fixing quoting/escaping along the way.
 :tblsubsplit: Expand the contents of a column which contains multiple values

@@ -1,0 +1,95 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+# arguments
+my %flags;
+getopts("sthi:e:", \%flags);
+my $SEP = ($ENV{'TBLSEP'} || "\t");
+my ($file) = @ARGV;
+if(!$file || defined($flags{'h'}))
+{
+  print(STDERR qq{$0 [-sieth] file:
+Write a matrix starting from a tabular file of the form:
+
+ id1	id2	value
+ id1	id2	value
+ id2	id1	value
+ ...	...	...
+
+You can change the column separator by setting the TBLSEP environment variable.
+The following command line flags are supported:
+
+  -s:	automatic symmetric expansion
+  -i V:	provide the identity value
+  -e V:	provide the empty value
+  -t:	output transposed matrix
+  -h:	help summary
+});
+  exit(2);
+}
+
+# settings
+my $transpose = defined($flags{'t'});
+my $symmetric = defined($flags{'s'});
+my $identity = $flags{'i'} // 1;
+my $empty = $flags{'e'} // "";
+
+# program
+open(FD, $file) or die("cannot open $file\n");
+my %matrix;
+while(<FD>)
+{
+  s/[\r\n]+$//;
+  my ($i, $j, $v) = split($SEP, $_, -1);
+  ($i, $j) = ($j, $i) if($transpose);
+  $matrix{$i}->{$j} = $v;
+}
+
+if($symmetric)
+{
+  my %tmp;
+  foreach my $k(keys(%matrix))
+  {
+    $tmp{$k} = 1;
+    foreach my $s(values(%matrix)) {
+      foreach my $sk(keys(%{$s})) {
+	$tmp{$sk} = 1;
+      }
+    }
+  }
+  my @a = sort(keys(%tmp));
+  
+  print join($SEP, "", @a), "\n";
+  foreach my $x(@a)
+  {
+    my @row = ($x);
+    foreach my $y(@a) {
+      push(@row, $matrix{$x}->{$y} // $matrix{$y}->{$x} // ($x eq $y? $identity: $empty));
+    }
+    print join($SEP, @row), "\n";
+  }
+}
+else
+{
+  my @a = sort(keys(%matrix));
+  my %tmp;
+  foreach my $k(values(%matrix)) {
+    foreach my $v(keys(%{$k})) {
+      $tmp{$v} = 1;
+    }
+  }
+  my @b = sort(keys(%tmp));
+  
+  print join($SEP, "", @a), "\n";
+  foreach my $y(@b)
+  {
+    my @row = ($y);
+    foreach my $x(@a) {
+      push(@row, $matrix{$x}->{$y} // ($x eq $y? $identity: $empty));
+    }
+    print join($SEP, @row), "\n";
+  }
+}
