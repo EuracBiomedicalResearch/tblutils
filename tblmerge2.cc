@@ -225,12 +225,11 @@ main(int argc, char* argv[]) try
   key_col kc;
   do
   {
-    int fd;
     const char* addr;
     const char* file(argv[optind++]);
 
     if(verb > 0) cerr << "loading " << file << "...\n";
-    fix_string_matrix* tmp(mapFixStringMatrix(fd, &addr, file, sep));
+    fix_string_matrix* tmp(mapFixStringMatrix(&addr, file, sep));
     if(!tmp->size() || !tmp->front().size())
     {
       cerr << file << ": file is empty\n";

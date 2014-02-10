@@ -112,9 +112,8 @@ main(int argc, char* argv[]) try
   }
 
   // open the file
-  int fd;
   const char* addr;
-  fix_string_matrix& m = *mapFixStringMatrix(fd, &addr, file, sep);
+  fix_string_matrix& m = *mapFixStringMatrix(&addr, file, sep);
 
   // build the resulting column list
   vector<size_t> cols;

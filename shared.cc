@@ -93,19 +93,21 @@ tokenize(vector<string>& dst, const string& buf,
  */
 
 fix_string_matrix*
-mapFixStringMatrix(int& fd, const char** addr, const char* file, const char sep)
+mapFixStringMatrix(const char** addr, const char* file, const char sep, int* fd)
 {
   // open the file
   *addr = NULL;
-  fd = open(file, O_RDONLY);
-  if(fd < 0)
+  int _fd = open(file, O_RDONLY);
+  if(fd) *fd = _fd;
+  if(_fd < 0)
     throw runtime_error(sprintf2("%s: error: cannot open file!", file));
 
   // map the file
   struct stat stBuf;
-  fstat(fd, &stBuf);
+  fstat(_fd, &stBuf);
   size_t addrLen = stBuf.st_size;
-  *addr = (const char*)mmap(NULL, addrLen, PROT_READ, MAP_SHARED, fd, 0);
+  *addr = (const char*)mmap(NULL, addrLen, PROT_READ, MAP_SHARED, _fd, 0);
+  if(!fd) close(_fd);
   if(!*addr)
     throw runtime_error(sprintf2("%s: error: cannot map file!", file));
 

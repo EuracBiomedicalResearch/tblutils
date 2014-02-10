@@ -189,4 +189,4 @@ operator <<(ostream& buf, const fix_string& r)
 typedef vector<vector<fix_string> > fix_string_matrix;
 
 fix_string_matrix*
-mapFixStringMatrix(int& fd, const char** addr, const char* file, const char sep);
+mapFixStringMatrix(const char** addr, const char* file, const char sep, int* fd = NULL);

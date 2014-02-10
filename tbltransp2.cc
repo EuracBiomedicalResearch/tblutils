@@ -62,9 +62,8 @@ main(int argc, char* argv[]) try
     sep = *envSep;
 
   // open the file
-  int fd;
   const char* addr;
-  fix_string_matrix& m = *mapFixStringMatrix(fd, &addr, file, sep);
+  fix_string_matrix& m = *mapFixStringMatrix(&addr, file, sep);
 
   // start writing back
   for(size_t x = 0; x != m.front().size(); ++x)
