@@ -28,7 +28,9 @@ by setting the TBLSEP environment variable.
 my ($cols, $rows); 
 
 # fetch column count
-my @tmp = split($SEP, <>, -1);
+$_ = <>;
+s/[\r\n]+$//;
+my @tmp = split($SEP, $_, -1);
 $cols = @tmp || 1;
 $rows = 1;
 
