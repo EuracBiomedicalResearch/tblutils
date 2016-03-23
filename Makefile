@@ -9,41 +9,36 @@ DESTDIR :=
 PREFIX := /usr/local
 
 # Config
-TBLTRANSP2_OBJECTS = tbltransp2.o shared.o
-TBLMERGE2_OBJECTS = tblmerge2.o shared.o
-TBLCUT_OBJECTS = tblcut.o shared.o
-TBL2EXCEL_OBJECTS = tbl2excel.o shared.o
-BUILT = tbltransp2 tblmerge2 tblcut tbl2excel
+tbltransp2_OBJECTS = tbltransp2.o shared.o
+tblmerge2_OBJECTS = tblmerge2.o shared.o
+tblcut_OBJECTS = tblcut.o shared.o
+tbl2excel_OBJECTS = tbl2excel.o shared.o
+BUILT_TARGETS = tbltransp2 tblmerge2 tblcut tbl2excel
 TARGETS = tblabelize tblcsort tblfilter tblmerge tblnorm tbltransp \
 	tblunlabelize tbl2excel-helper tbl2tbl tblsubsplit tblsubmerge \
-	tbltomatrix $(BUILT)
+	tbltomatrix $(BUILT_TARGETS)
 
 
 # Rules
-.SUFFIXES: .cc .o
+.SUFFIXES:
+.SECONDEXPANSION:
 .PHONY: all clean install
 
-.cc.o:
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
-
-
-# Targets
+all_OBJECTS := $(foreach T,$(BUILT_TARGETS),$($(T)_OBJECTS))
+all_DEPS := $(all_OBJECTS:.o=.d)
 all: $(TARGETS)
 
-tbltransp2: $(TBLTRANSP2_OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $(TBLTRANSP2_OBJECTS) $(LDFLAGS) $(LDADD)
+%.o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-tblmerge2: $(TBLMERGE2_OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $(TBLMERGE2_OBJECTS) $(LDFLAGS) $(LDADD)
+%.o: %.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-tblcut: $(TBLCUT_OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $(TBLCUT_OBJECTS) $(LDFLAGS) $(LDADD)
-
-tbl2excel: $(TBL2EXCEL_OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $(TBL2EXCEL_OBJECTS) $(LDFLAGS) $(LDADD)
+$(TARGETS): %: $$($$@_OBJECTS)
+	$(CXX) $(CXXFLAGS) -o $@ $($@_OBJECTS) $(LDFLAGS) $($@_LDADD)
 
 clean:
-	rm -rf *.o *.d core ii_files $(BUILT)
+	rm -f $(all_OBJECTS) $(all_DEPS) $(BUILT_TARGETS)
 
 install: $(TARGETS)
 	install -p -t $(DESTDIR)$(PREFIX)/bin/ $(TARGETS)
