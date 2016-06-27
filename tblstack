@@ -1,0 +1,94 @@
+#!/usr/bin/perl
+# tblstack: stack multiple CSV files
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+my %flags;
+getopts("ih", \%flags);
+my $SEP = ($ENV{'TBLSEP'} || "\t");
+my @files = @ARGV;
+if((!@files and !defined($flags{'i'})) || defined($flags{'h'}))
+{
+  print(STDERR qq{$0 [-ih] file [file ...]:
+Stack multiple CSV files into a single table, merging columns (but not rows).
+CSV files are TAB separated, containing column labels on the first row.
+You can change the column separator by setting the TBLSEP environment variable.
+
+  -i:   read input file list from STDIN
+  -h:	help summary
+});
+  exit(2);
+}
+
+# read input file list
+if(defined($flags{'i'}))
+{
+  while(<STDIN>) {
+    s/[\r\n]+$//;
+    push(@files, $_);
+  }
+}
+
+# initial state
+my %cols;
+my @data;
+my $lines = 0;
+
+foreach my $file(@files)
+{
+  # open the file and read columns
+  open(FD, $file) or die("cannot open $file\n");
+  $_ = <FD>;
+  s/[\r\n]+$//;
+  my @cmap;
+
+  # remap (labels)
+  foreach my $col(split($SEP, $_, -1))
+  {
+    my $pos = $cols{$col};
+    if(!defined($pos))
+    {
+      $pos = keys(%cols);
+      $cols{$col} = $pos;
+      push(@data, []);
+    }
+    push(@cmap, $pos);
+  }
+
+  # remap (contents)
+  while(<FD>)
+  {
+    s/[\r\n]+$//;
+    my @line = split($SEP, $_, -1);
+    die("line error at $file:$.:$#line") if($#line != $#{cmap});
+
+    foreach my $col(0..$#line) {
+      $data[$cmap[$col]]->[$lines] = $line[$col];
+    }
+
+    ++$lines;
+  }
+
+  close(FD);
+}
+if(!$lines) {
+  exit(0);
+}
+
+# output
+my %invc;
+while(my ($k, $v) = each(%cols)) {
+  $invc{$v} = $k;
+}
+print(join($SEP, (map { $invc{$_} } 0..keys(%invc)-1)) . "\n");
+
+foreach my $line(0..$lines-1)
+{
+  my @out;
+  for my $col(0 .. keys(%cols)-1) {
+    push(@out, $data[$col]->[$line] // "");
+  }
+  print(join($SEP, @out) . "\n");
+}
