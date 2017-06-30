@@ -45,6 +45,7 @@ help(char* argv[])
        << "separator by setting the TBLSEP environment variable.\n"
        << "\n"
        << "  -v:	increase verbosity\n"
+       << "  -k:	keep going on duplicate rows\n"
        << "  -h:	help summary\n";
 }
 
@@ -109,7 +110,8 @@ escape(const string& str, const char c = ',')
 
 void
 mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, const key_col& dstKc,
-    const fix_string_matrix& add, const col_map& addCm, key_map& addKm, const key_col& addKc)
+		const fix_string_matrix& add, const col_map& addCm, key_map& addKm, const key_col& addKc,
+		bool keep_going=false)
 {
   // preallocate all columns on dst
   vector<size_t> addDstCm;
@@ -161,9 +163,12 @@ mergeCharMatrix(fix_string_matrix& dst, col_map& dstCm, key_map& dstKm, const ke
 	if((*it)[addCol] != dstRow[dstCol])
 	{
 	  string cname = add.front()[addCol];
-	  throw runtime_error(
-	      sprintf2("conflicting contents for column \"%s\", key \"%s\"",
-		  cname.c_str(), escape(key).c_str()));
+	  string error = sprintf2("conflicting contents for column \"%s\", key \"%s\"",
+				  cname.c_str(), escape(key).c_str());
+	  if(keep_going)
+	    cerr << error << std::endl;
+	  else
+	    throw runtime_error(error.c_str());
 	}
       }
     }
@@ -176,11 +181,16 @@ main(int argc, char* argv[]) try
 {
   int arg;
   int verb = 0;
-  while((arg = getopt(argc, argv, "vh")) != -1)
+  bool keep_going = false;
+  while((arg = getopt(argc, argv, "vhk")) != -1)
     switch(arg)
     {
     case 'v':
       ++verb;
+      break;
+
+    case 'k':
+      keep_going = true;
       break;
 
     case 'h':
@@ -255,7 +265,7 @@ main(int argc, char* argv[]) try
       if(ci == ctmp.end())
       {
 	cerr << file << ": cannot find key column \"" << *keyIt << "\"\n";
-	return EXIT_FAILURE;
+	if(!keep_going) return EXIT_FAILURE;
       }
       kcTmp.push_back(ci->second);
     }
@@ -268,7 +278,7 @@ main(int argc, char* argv[]) try
       if(!ktmp.insert(make_pair(key, i)).second)
       {
 	cerr << file << ": duplicated key \"" << escape(key) << "\"\n";
-	return EXIT_FAILURE;
+	if(!keep_going) return EXIT_FAILURE;
       }
     }
 
@@ -276,7 +286,7 @@ main(int argc, char* argv[]) try
     {
       // table merge on the working copy
       if(verb > 0) cerr << "merging " << file << "...\n";
-      try { mergeCharMatrix(*m, cm, km, kc, *tmp, ctmp, ktmp, kcTmp); }
+      try { mergeCharMatrix(*m, cm, km, kc, *tmp, ctmp, ktmp, kcTmp, keep_going); }
       catch(const runtime_error& e)
       {	throw runtime_error(sprintf2("%s: %s", file, e.what())); }
     }
