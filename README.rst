@@ -148,9 +148,10 @@ Authors and Copyright
 
 `tblutils` can be found at http://www.thregr.org/~wavexx/software/tblutils/
 
-| `tblutils` is distributed under GPL2 (see COPYING) WITHOUT ANY WARRANTY.
-| Copyright(c) 2008-2014 by wave++ "Yuri D'Elia" <wavexx@thregr.org>.
-| Copyright(c) 2008-2010 EURAC, Institute of Genetic Medicine.
+| `tblutils` is distributed under GNU GPLv3+ (see COPYING) WITHOUT ANY WARRANTY.
+| Copyright(c) 2008-2017: wave++ "Yuri D'Elia" <wavexx@thregr.org>.
+| Copyright(c) 2008-2017: EURAC, Institute of Genetic Medicine.
 
-`tblutils`'s GIT repository is publicly accessible at
-``git://src.thregr.org/tblutils``.
+`tblutils`'s GIT repository is publicly accessible at:
+
+https://github.com/EuracBiomedicalResearch/tblutils
