@@ -1,0 +1,57 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use locale;
+use Getopt::Std;
+
+# arguments
+my %flags;
+getopts("sth", \%flags);
+my $SEP = ($ENV{'TBLSEP'} || "\t");
+my ($file) = @ARGV;
+if(!$file || defined($flags{'h'}))
+{
+  print(STDERR qq{$0 [-sth] file:
+Write a three-column associative table starting from a matrix.
+You can change the column separator by setting the TBLSEP environment variable.
+The following command line flags are supported:
+
+  -s:	automatic symmetric elimination
+  -t:	output transposed identifiers
+  -h:	help summary
+});
+  exit(2);
+}
+
+# settings
+my $transpose = defined($flags{'t'});
+my $symmetric = defined($flags{'s'});
+
+# program
+open(FD, $file) or die("cannot open $file\n");
+my %matrix;
+
+# headers
+$_ = <FD>;
+s/[\r\n]+$//;
+my @names = split($SEP, $_, -1);
+@names = splice(@names, 1);
+
+# rows
+my @rows;
+my %data;
+while(<FD>)
+{
+  s/[\r\n]+$//;
+  my @line = split($SEP, $_, -1);
+  push(@rows, $line[0]);
+  $data{$line[0]} = [splice(@line, 1)];
+}
+
+# output
+for my $i(@rows) {
+  for my $j(0 .. $#names) {
+    my $name = $names[$j];
+    print(join($SEP, ($i, $name, $data{$i}->[$j])) . "\n");
+  }
+}
