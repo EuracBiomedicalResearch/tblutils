@@ -41,7 +41,7 @@ clean:
 	rm -f $(all_OBJECTS) $(all_DEPS) $(BUILT_TARGETS)
 
 install: $(TARGETS)
-	install -p -t $(DESTDIR)$(PREFIX)/bin/ $(TARGETS)
+	install -p $(TARGETS) $(DESTDIR)$(PREFIX)/bin/
 
 
 # Dependencies
