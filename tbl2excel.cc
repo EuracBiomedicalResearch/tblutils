@@ -53,7 +53,7 @@ const int detectLines = 3;
 const char fallbackEnv[] = "TBLSEP";
 const char fallbackSep = '\t';
 const char detectSep[] = ",;: \t|";
-const char defaultUndefStr[] = "NA,-, ,.,";
+const char defaultUndefStr[] = "NA,<NA>,None,-, ,.,";
 
 // types
 enum datatype_t
