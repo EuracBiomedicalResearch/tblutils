@@ -14,6 +14,31 @@ index (``tblcsort``), join multiple files on a common index without having to
 pre-sort them (``tblmerge``), and much more.
 
 
+Related software
+----------------
+
+In addition to `tblutils`, we also recommend:
+
+* csvtool_: includes several other complementary utilities to work with tabular
+  text files, such as the ability to extract sub-matrices from larger tables,
+  performing column replacements, etc.
+
+* datamash_: allows to extract statistical informations out of data tables,
+  such as standard deviation, distribution, etc. Also allows to perform some
+  basic matrix manipulations, like transposition.
+
+* miller_: a general text/tabular toolkit which encompasses features from both
+  csvtool, datamash and num-utils.
+
+* num-utils_: contains a multitude of utilities to *manipulate* the actual
+  values in tabular text files (averaging, rounding, normalization, etc).
+
+.. _csvtool: https://forge.ocamlcore.org/projects/csv/
+.. _datamash: https://savannah.gnu.org/projects/datamash/
+.. _miller: https://johnkerl.org/miller/doc/
+.. _num-utils: https://suso.suso.org/programs/num-utils/index.phtml
+
+
 Toolset
 -------
 
@@ -137,16 +162,11 @@ always the case. We will fix/improve the tools and documentation with time.
 Sometimes multiple implementations are provided, making different
 memory/disk/complexity trade-offs.
 
-In addition to `tblutils`, we also recommend `csvtool
-<http://forge.ocamlcore.org/projects/csv/>`_, which includes several other
-complementary utilities to work with tabular text files, such as the ability to
-extract sub-matrices from larger tables, performing column replacements, etc.
-
 
 Authors and Copyright
 ---------------------
 
-`tblutils` can be found at http://www.thregr.org/~wavexx/software/tblutils/
+`tblutils` can be found at https://www.thregr.org/wavexx/software/tblutils/
 
 | `tblutils` is distributed under GNU GPLv3+ (see COPYING) WITHOUT ANY WARRANTY.
 | Copyright(c) 2008-2017: wave++ "Yuri D'Elia" <wavexx@thregr.org>.
