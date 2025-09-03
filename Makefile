@@ -16,7 +16,7 @@ tbl2excel_OBJECTS = tbl2excel.o shared.o
 BUILT_TARGETS = tbltransp2 tblmerge2 tblcut tbl2excel
 TARGETS = tblabelize tblcsort tblfilter tblmerge tblnorm tbltransp \
 	tblunlabelize tbl2excel-helper tbl2tbl tblsubsplit tblsubmerge \
-	tbltomatrix $(BUILT_TARGETS)
+	tbltomatrix tblsize $(BUILT_TARGETS)
 
 
 # Rules
